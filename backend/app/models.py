@@ -1,7 +1,12 @@
 """SQLModel tables. Mirrors the canonical data model in CLAUDE.md."""
-from datetime import date, datetime
+from datetime import date, datetime, timedelta, timezone
 
 from sqlmodel import Field, SQLModel
+
+IST = timezone(timedelta(hours=5, minutes=30))  # collection timezone; a fare's period is its IST date
+
+# Columns that identify one price-quote series, tracked period to period for price relatives.
+QUOTE_KEY = ["route_id", "airline_id", "advance_days", "dep_dow"]
 
 
 class Route(SQLModel, table=True):

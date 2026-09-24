@@ -11,7 +11,8 @@ You implement the statistical core in backend/app/engine/.
   against zero/negative prices and empty inputs explicitly.
 - aggregate.py: DGCA-weighted arithmetic mean of route indices (Young /
   modified Laspeyres).
-- anomaly.py: flag z-score > 2 against a 7-day rolling window, per route.
+- anomaly.py: flag z-score > 2 against the preceding 7 days AND a rise of at
+  least 5% vs that window's mean, per route (the floor filters noise).
 - yield_curve.py: fare vs advance-days.
 
 Every function is pure (no DB or network access inside) and unit-tested

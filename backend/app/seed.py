@@ -4,7 +4,7 @@ Wipe the DB and reseed:  uv run python -m app.seed
 """
 import argparse
 import csv
-from datetime import date, datetime, time, timedelta, timezone
+from datetime import date, datetime, time, timedelta
 from pathlib import Path
 
 import numpy as np
@@ -12,10 +12,9 @@ from sqlalchemy import Engine
 from sqlmodel import Session, func, select
 
 from app.db import DATA_DIR, engine as default_engine, reset_db
-from app.models import Airline, Fare, IndexValue, Route
+from app.models import IST, Airline, Fare, IndexValue, Route
 
 ROUTE_BASKET_CSV = DATA_DIR / "route_basket.csv"
-IST = timezone(timedelta(hours=5, minutes=30))
 
 N_DAYS = 14
 ADVANCE_DAYS = (1, 7, 14, 30)
