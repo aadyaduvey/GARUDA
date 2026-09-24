@@ -9,6 +9,10 @@ export const fmtDate = (iso: string) =>
 
 export const fmtDay = (iso: string) => parseDate(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
 
+/** A UTC timestamp shown as IST wall time, e.g. "25 Sept, 02:21 IST". */
+export const fmtTimeIST = (iso: string) =>
+  `${new Date(iso).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false })} IST`
+
 export const fmtIndex = (n: number) => n.toFixed(2)
 
 const inr = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 })

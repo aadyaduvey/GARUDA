@@ -14,6 +14,7 @@ class IndigoScraper(Scraper):
     airline = "6E"
     name = "IndiGo"
     source = "indigo"
+    unavailable = "robots.txt disallows automated search/booking access"
 
     def scrape(self, routes: list[tuple[str, str]], today: date) -> list[FareRow]:
-        raise ScraperError("not scraped: goindigo.in robots.txt disallows automated search/booking access")
+        raise ScraperError(f"not scraped: {self.unavailable}")

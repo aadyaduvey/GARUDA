@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from './api'
+import { StatusStrip } from './components/StatusStrip'
 import { Async } from './components/ui'
 import { useApi } from './useApi'
 import { AnomaliesView } from './views/AnomaliesView'
@@ -48,6 +49,7 @@ export default function App() {
           <p className="text-white/75">Prototype for MoSPI · Smart India Hackathon SIH26056</p>
         </div>
       </header>
+      <StatusStrip />
 
       <nav className="border-b border-line bg-white">
         <ul className="mx-auto flex max-w-[1400px] flex-wrap px-6">

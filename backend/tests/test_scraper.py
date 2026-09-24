@@ -137,6 +137,15 @@ def test_dry_run_uses_cache_and_never_scrapes(seeded: Engine, tmp_path: Path) ->
     assert report["sources"][0]["status"] == "ok" and report["sources"][0]["rows"] == scheduler.DRY_RUN_ROWS
 
 
+def test_unavailable_airline_is_skipped_with_its_reason(seeded: Engine, tmp_path: Path) -> None:
+    blocked = FakeScraper("6E", error=AssertionError("must not be called"))
+    blocked.unavailable = "robots.txt disallows it"
+    report = run(seeded, tmp_path, {"6E": blocked})
+    assert blocked.calls == 0
+    assert report["sources"][0]["status"] == "unavailable"
+    assert report["sources"][0]["error"] == "robots.txt disallows it"
+
+
 def test_dry_run_without_cache_fails_cleanly(seeded: Engine, tmp_path: Path) -> None:
     report = run(seeded, tmp_path, {"QP": FakeScraper("QP")}, dry_run=True)
     assert report["sources"][0]["status"] == "failed"

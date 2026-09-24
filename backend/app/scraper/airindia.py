@@ -14,6 +14,7 @@ class AirIndiaScraper(Scraper):
     airline = "AI"
     name = "Air India"
     source = "airindia"
+    unavailable = "fares sit behind Akamai Bot Manager"
 
     def scrape(self, routes: list[tuple[str, str]], today: date) -> list[FareRow]:
-        raise ScraperError("not implemented: airindia.com fares sit behind Akamai Bot Manager")
+        raise ScraperError(f"not scraped: {self.unavailable}")

@@ -1,16 +1,12 @@
 import csv
 import io
-from collections.abc import Iterator
 from datetime import date
 
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import Engine
-from sqlmodel import Session
 
 from app.build_index import build
-from app.db import get_session
-from app.main import app
 from app.seed import ANOMALY_DAY, N_DAYS, seed
 
 START = date(2026, 1, 5)
@@ -18,17 +14,10 @@ SPIKE_DAY = date.fromordinal(START.toordinal() + ANOMALY_DAY - 1)
 
 
 @pytest.fixture
-def client(engine: Engine) -> Iterator[TestClient]:
+def client(engine: Engine, api: TestClient) -> TestClient:
     seed(engine, start=START)
     build(engine)
-
-    def session_override() -> Iterator[Session]:
-        with Session(engine) as session:
-            yield session
-
-    app.dependency_overrides[get_session] = session_override
-    yield TestClient(app)
-    app.dependency_overrides.clear()
+    return api
 
 
 def route_id(client: TestClient, label: str) -> int:

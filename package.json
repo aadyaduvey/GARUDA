@@ -1,0 +1,17 @@
+{
+  "name": "garuda",
+  "private": true,
+  "description": "GARUDA real-time airfare price index: API + dashboard. `pnpm start` sets up and runs everything.",
+  "scripts": {
+    "start": "pnpm install && pnpm run setup && pnpm run dev",
+    "setup": "uv sync --directory backend && uv run --directory backend python -m app.bootstrap && pnpm --dir frontend install",
+    "dev": "node scripts/check-ports.mjs && concurrently --kill-others --names api,web --prefix-colors blue,magenta \"uv run --directory backend uvicorn app.main:app --host 127.0.0.1 --port 8000\" \"pnpm --dir frontend dev --port 5173 --strictPort\"",
+    "test": "uv run --directory backend pytest && pnpm --dir frontend build && pnpm --dir frontend lint",
+    "reseed": "uv run --directory backend python -m app.seed",
+    "scrape": "uv run --directory backend python -m app.scraper.scheduler",
+    "scrape:offline": "uv run --directory backend python -m app.scraper.scheduler --dry-run"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

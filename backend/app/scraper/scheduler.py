@@ -14,7 +14,7 @@ from sqlalchemy import Engine
 from sqlmodel import Session, select
 
 from app.build_index import build
-from app.db import DATA_DIR, engine as default_engine
+from app.db import DATA_DIR, SCRAPER_STATUS_FILE, engine as default_engine
 from app.models import Route
 from app.pipeline.ingest import ingest
 from app.scraper.airindia import AirIndiaScraper
@@ -26,7 +26,7 @@ log = logging.getLogger("garuda.scheduler")
 
 SCRAPERS: dict[str, Scraper] = {s.airline: s for s in (AkasaScraper(), IndigoScraper(), AirIndiaScraper())}
 CACHE_DIR = DATA_DIR / "pre_collected"
-STATUS_FILE = DATA_DIR / "scraper_status.json"
+STATUS_FILE = SCRAPER_STATUS_FILE
 DRY_RUN_ROWS = 3
 
 
@@ -58,6 +58,8 @@ def run_batch(
 ) -> dict:
     """Run every scraper (or the chosen ones), ingest their rows, rebuild the index if anything new arrived.
 
+    Status per airline: ok, no_data, failed (logged, batch continues) or unavailable (deliberately not scraped).
+
     Returns the batch report, also written to `status_file` for the dashboard.
     """
     today = today_ist()
@@ -70,6 +72,11 @@ def run_batch(
     for code in airlines or list(scrapers):
         scraper = scrapers[code]
         status = {"airline": code, "name": scraper.name, "status": "failed", "rows": 0, "inserted": 0, "duplicates": 0, "rejected": {}, "error": None}
+        if scraper.unavailable:
+            status.update(status="unavailable", error=scraper.unavailable)
+            log.info("%s: not scraped (%s)", scraper.name, scraper.unavailable)
+            sources.append(status)
+            continue
         try:
             rows = cached_rows(scraper, cache_dir) if dry_run else scraper.scrape(basket, today)
             with Session(eng) as session:

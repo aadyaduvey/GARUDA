@@ -81,3 +81,26 @@ class YieldCurveOut(BaseModel):
     route: RouteOut
     premium_1d_vs_30d: float | None  # mean 1-day fare / mean 30-day fare
     series: list[YieldPoint]
+
+
+class SourceStatusOut(BaseModel):
+    airline: str
+    name: str
+    status: str  # "ok" | "no_data" | "failed" | "unavailable"
+    rows: int
+    inserted: int
+    error: str | None
+
+
+class ScraperRunOut(BaseModel):
+    run_at: datetime
+    mode: str  # "live" | "dry_run"
+    index_rebuilt: bool
+    sources: list[SourceStatusOut]
+
+
+class StatusOut(BaseModel):
+    latest_period: date | None
+    fares_by_source: dict[str, int]
+    last_live_fare_at: datetime | None  # newest non-synthetic fare
+    last_run: ScraperRunOut | None

@@ -128,6 +128,7 @@ class Scraper:
     airline: str  # IATA code
     name: str
     source: str
+    unavailable: str | None = None  # set when the airline is deliberately not scraped, with the reason
 
     def scrape(self, routes: list[tuple[str, str]], today: date) -> list[FareRow]:
         raise NotImplementedError
