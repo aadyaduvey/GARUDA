@@ -1,0 +1,21 @@
+[project]
+name = "garuda-backend"
+version = "0.1.0"
+description = "GARUDA: CPI-aligned real-time airfare price index (backend)"
+requires-python = ">=3.11,<3.12"
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "sqlmodel",
+    "pandas",
+    "numpy",
+    "playwright",
+    "playwright-stealth",
+    "apscheduler",
+    "httpx",
+    "pytest",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
