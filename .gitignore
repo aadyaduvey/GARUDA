@@ -16,3 +16,6 @@ frontend/dist/
 .DS_Store
 Thumbs.db
 .vscode/
+
+# Scraper runtime state (the cached sample in pre_collected/ IS committed)
+backend/data/scraper_status.json
