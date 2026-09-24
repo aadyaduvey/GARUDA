@@ -20,6 +20,15 @@ def rolling_rise(series: pd.Series, window: int = WINDOW) -> pd.Series:
     return series / series.shift(1).rolling(window, min_periods=window).mean() - 1
 
 
+def severity(rise: float) -> str:
+    """Dashboard severity of a flagged rise: >= 25% high, >= 10% medium, else low."""
+    if rise >= 0.25:
+        return "high"
+    if rise >= 0.10:
+        return "medium"
+    return "low"
+
+
 def flag_anomalies(
     route_indices: pd.DataFrame, threshold: float = Z_THRESHOLD, min_rise: float = MIN_RISE, window: int = WINDOW
 ) -> pd.DataFrame:

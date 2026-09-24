@@ -1,10 +1,8 @@
-from collections.abc import Iterator
 from datetime import date
 
 import pytest
 from sqlalchemy import Engine
-from sqlalchemy.pool import StaticPool
-from sqlmodel import Session, create_engine, func, select
+from sqlmodel import Session, func, select
 
 from app.build_index import BASE_DAYS, build
 from app.models import IndexValue, Route
@@ -13,12 +11,9 @@ from app.seed import ANOMALY_DAY, N_DAYS, seed
 START = date(2026, 1, 5)
 
 
-@pytest.fixture
-def engine() -> Iterator[Engine]:
-    eng = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
-    seed(eng, start=START)
-    yield eng
-    eng.dispose()
+@pytest.fixture(autouse=True)
+def seeded(engine: Engine) -> None:
+    seed(engine, start=START)
 
 
 def test_writes_route_and_national_rows(engine: Engine) -> None:

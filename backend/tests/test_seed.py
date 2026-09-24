@@ -1,20 +1,11 @@
-from collections.abc import Iterator
 from datetime import date
 
 import pytest
 from sqlalchemy import Engine
-from sqlalchemy.pool import StaticPool
-from sqlmodel import Session, create_engine, func, select
+from sqlmodel import Session, func, select
 
 from app.models import Fare, Route
 from app.seed import seed
-
-
-@pytest.fixture
-def engine() -> Iterator[Engine]:
-    eng = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
-    yield eng
-    eng.dispose()
 
 
 def mean_fare(session: Session, advance_days: int) -> float:

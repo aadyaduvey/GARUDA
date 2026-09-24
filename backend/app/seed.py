@@ -1,6 +1,6 @@
 """Synthetic fare generator: realistic yield curve, daily noise, one planted anomaly.
 
-Wipe the DB and reseed:  uv run python -m app.seed
+Wipe the DB, reseed and rebuild the index:  uv run python -m app.seed
 """
 import argparse
 import csv
@@ -11,6 +11,7 @@ import numpy as np
 from sqlalchemy import Engine
 from sqlmodel import Session, func, select
 
+from app.build_index import build
 from app.db import DATA_DIR, engine as default_engine, reset_db
 from app.models import IST, Airline, Fare, IndexValue, Route
 
@@ -114,7 +115,10 @@ def main() -> None:
     parser.add_argument("--start", type=date.fromisoformat, help="first seeded day, YYYY-MM-DD (default: 13 days ago)")
     parser.add_argument("--rng-seed", type=int, default=42)
     args = parser.parse_args()
-    for table, count in seed(start=args.start, rng_seed=args.rng_seed).items():
+    counts = seed(start=args.start, rng_seed=args.rng_seed)
+    routes, national = build()
+    counts["index_value"] = len(routes) + len(national)
+    for table, count in counts.items():
         print(f"{table:<12} {count:>6}")
 
 

@@ -17,10 +17,12 @@ from app.pipeline.impute import carry_forward
 BASE_DAYS = 7  # PoC base period: the first week of collected fares = 100
 
 
-def load_fares(session: Session) -> pd.DataFrame:
-    fares = pd.DataFrame([f.model_dump() for f in session.exec(select(Fare))])
+def load_fares(session: Session, route_id: int | None = None) -> pd.DataFrame:
+    """All fares (or one route's) as a DataFrame with a `period` column. Empty if there are none."""
+    query = select(Fare) if route_id is None else select(Fare).where(Fare.route_id == route_id)
+    fares = pd.DataFrame([f.model_dump() for f in session.exec(query)])
     if fares.empty:
-        raise ValueError("no fares in the DB; run `uv run python -m app.seed` first")
+        return fares
     # Timestamps are stored in UTC; a fare's period is its IST calendar date.
     fares["period"] = pd.to_datetime(fares["scrape_ts"], utc=True).dt.tz_convert(IST).dt.date
     return fares
@@ -30,6 +32,8 @@ def build(eng: Engine = default_engine) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Recompute all index_value rows. Returns (route indices with anomaly flags, national series)."""
     with Session(eng) as session:
         fares = load_fares(session)
+        if fares.empty:
+            raise ValueError("no fares in the DB; run `uv run python -m app.seed` first")
         weights = {route.id: route.dgca_weight for route in session.exec(select(Route))}
         periods = sorted(fares["period"].unique())
         quotes = carry_forward(drop_outliers(fares), periods)
