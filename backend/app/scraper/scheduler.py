@@ -1,8 +1,10 @@
-"""Scrape batch: scrape -> ingest -> rebuild index. One failing airline never stops the batch.
+"""Scrape batch: scrape -> ingest -> rebuild index, into the LIVE database (never the demo one).
+One failing airline never stops the batch.
 
   uv run python -m app.scraper.scheduler              # one live batch now
   uv run python -m app.scraper.scheduler --dry-run    # offline: cached sample rows, no network
-  uv run python -m app.scraper.scheduler --daily      # keep running; one batch every day at 06:00 IST
+  uv run python -m app.scraper.scheduler --daily      # keep running: catch up now if today is missing,
+                                                      # then one batch every day at 06:00 IST
 """
 import argparse
 import json
@@ -11,11 +13,12 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from sqlalchemy import Engine
-from sqlmodel import Session, select
+from sqlmodel import Session, func, select
 
+from app.bootstrap import bootstrap_live
 from app.build_index import build
-from app.db import DATA_DIR, SCRAPER_STATUS_FILE, engine as default_engine
-from app.models import Route
+from app.db import DATA_DIR, SCRAPER_STATUS_FILE, live_engine
+from app.models import IST, Fare, Route
 from app.pipeline.ingest import ingest
 from app.scraper.airindia import AirIndiaScraper
 from app.scraper.akasa import AkasaScraper
@@ -51,7 +54,7 @@ def run_batch(
     airlines: list[str] | None = None,
     routes: list[str] | None = None,
     dry_run: bool = False,
-    eng: Engine = default_engine,
+    eng: Engine = live_engine,
     scrapers: dict[str, Scraper] = SCRAPERS,
     cache_dir: Path = CACHE_DIR,
     status_file: Path = STATUS_FILE,
@@ -116,6 +119,16 @@ def run_batch(
     return report
 
 
+def collected_today(eng: Engine = live_engine) -> bool:
+    """True if the database already holds a scraped (non-synthetic) fare from today, IST."""
+    with Session(eng) as session:
+        last = session.exec(select(func.max(Fare.scrape_ts)).where(Fare.source != "synthetic")).one()
+    if last is None:
+        return False
+    last = last if last.tzinfo else last.replace(tzinfo=timezone.utc)  # SQLite returns UTC without tzinfo
+    return last.astimezone(IST).date() == today_ist()
+
+
 def print_report(report: dict) -> None:
     print(f"\nBatch {report['mode']} at {report['run_at']}  (index rebuilt: {report['index_rebuilt']})")
     for s in report["sources"]:
@@ -133,6 +146,7 @@ def main() -> None:
     parser.add_argument("--daily", action="store_true", help="stay running and batch every day at 06:00 IST")
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+    log.info("live database: %s", bootstrap_live())
 
     def job() -> None:
         print_report(run_batch(airlines=args.airline, routes=args.route, dry_run=args.dry_run))
@@ -144,6 +158,11 @@ def main() -> None:
     from apscheduler.schedulers.blocking import BlockingScheduler
     from apscheduler.triggers.cron import CronTrigger
 
+    if collected_today():
+        log.info("today's fares already collected")
+    else:
+        log.info("no fares collected today yet: running a catch-up batch now")
+        job()
     scheduler = BlockingScheduler(timezone="Asia/Kolkata")
     scheduler.add_job(job, CronTrigger(hour=6, minute=0, timezone="Asia/Kolkata"), misfire_grace_time=3600)
     log.info("scheduled daily batch at 06:00 IST; Ctrl+C to stop")

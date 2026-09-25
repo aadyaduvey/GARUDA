@@ -93,15 +93,21 @@ def generate_fares(routes: list[Route], airlines: list[Airline], start: date, rn
     return fares
 
 
+def add_reference_data(session: Session) -> tuple[list[Route], list[Airline]]:
+    """Insert the route basket and the airlines (shared by the demo and live databases). Flushed, not committed."""
+    routes = load_routes()
+    airlines = [Airline(name=name, code=code, market_share=share) for name, code, share, _ in AIRLINES]
+    session.add_all(routes + airlines)
+    session.flush()
+    return routes, airlines
+
+
 def seed(eng: Engine = default_engine, start: date | None = None, rng_seed: int = 42) -> dict[str, int]:
     """Wipe all tables and insert routes, airlines and N_DAYS of synthetic fares. Returns row counts."""
     start = start or date.today() - timedelta(days=N_DAYS - 1)
     reset_db(eng)
     with Session(eng) as session:
-        routes = load_routes()
-        airlines = [Airline(name=name, code=code, market_share=share) for name, code, share, _ in AIRLINES]
-        session.add_all(routes + airlines)
-        session.flush()
+        routes, airlines = add_reference_data(session)
         session.add_all(generate_fares(routes, airlines, start, np.random.default_rng(rng_seed)))
         session.commit()
         return {

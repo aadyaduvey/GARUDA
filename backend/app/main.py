@@ -7,12 +7,13 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api import routes_export, routes_fares, routes_index, routes_status
-from app.db import init_db
+from app.db import ENGINES, init_db
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
-    init_db()
+    for eng in ENGINES.values():
+        init_db(eng)
     yield
 
 

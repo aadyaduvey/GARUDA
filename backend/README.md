@@ -10,6 +10,12 @@ uv run uvicorn app.main:app --reload       # API on http://127.0.0.1:8000 (docs 
 uv run pytest
 ```
 
+## Two databases
+
+`data/garuda.db` holds the **demo** data (synthetic seed only). `data/garuda_live.db` holds
+**live** data (real scraped fares only). Every API endpoint takes `?dataset=demo|live`
+(default `demo`). Scrapers write to the live database only, so the demo numbers never drift.
+
 ## Scrapers
 
 ```bash
@@ -17,7 +23,12 @@ uv run python -m app.scraper.scheduler                 # one live batch now: scr
 uv run python -m app.scraper.scheduler --dry-run       # offline: ingest 3 cached real rows, no network
 uv run python -m app.scraper.scheduler --airline QP --route DEL-BOM   # narrow a run
 uv run python -m app.scraper.scheduler --daily         # stay running; batch every day at 06:00 IST
+                                                       # (runs one right away if today is missing)
+uv run python -m app.scraper.verify                    # cross-check prices against Akasa's own search
 ```
+
+`pnpm start` (project root) runs the `--daily` collector alongside the API and dashboard.
+Opening Akasa's site is retried up to 3 times, since it occasionally resets the first connection.
 
 Each batch writes `data/scraper_status.json` (last run, per-airline ok/failed). A failing
 airline is logged and skipped; it never stops the batch or the demo.
@@ -37,6 +48,12 @@ Collection rule (mirrors US BLS): for each advance window (1, 7, 14, 30 days) an
 departure day (Tuesday, Saturday), price the first such weekday at least `window` days
 ahead. The window is the minimum lead time; the actual one can be up to 6 days longer.
 
+Accuracy check (`app/scraper/verify.py`): for each route it re-prices the Tuesday departures
+through Akasa's regular flight search and compares the cheapest flight between the **same two
+airports** with the calendar price the scraper stores. On 25 Sep 2026: 8/8 exact matches
+(DEL-BOM, BLR-DEL). Akasa's search is city-wide, so it also lists the new Noida (DXN) and
+Navi Mumbai (NMI) airports; those are different routes and are excluded.
+
 Known gap: Akasa returns an error for **BOM-GOI**. Akasa appears to serve Goa via Mopa
 (GOX), not Dabolim (GOI). The route basket is unchanged; the batch logs it and continues.
 
@@ -54,9 +71,6 @@ Sanctioned routes to the same data, in rough order of preference:
 Until then, `--dry-run` keeps the demo working offline, and IndiGo / Air India fares in
 the demo database are synthetic (`source = "synthetic"`).
 
-### Mixing live and synthetic data
-
-Live rows land in today's period next to the synthetic seed. The index takes the lowest
-fare per quote, so a live fare changes today's value only when it is cheaper than the
-synthetic one. For a meaningful live index, collect real fares for a full base week first
-and compute against that base; the synthetic seed exists so the demo works before then.
+Other platforms were checked on 25 Sep 2026 and **all** disallow automated flight search in
+robots.txt: MakeMyTrip, Goibibo, ixigo, EaseMyTrip, Yatra, Cleartrip, Kayak, Skyscanner and
+Google Flights.

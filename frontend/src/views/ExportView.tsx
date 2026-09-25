@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { api } from '../api'
+import { api, noDataHint } from '../api'
 import { Async, Card, ErrorBox, Loading } from '../components/ui'
 import { useApi } from '../useApi'
 
@@ -99,7 +99,7 @@ export function ExportView() {
       title="CPI export"
       subtitle="Route and national index values in MoSPI's CPI format: route, period, index_value, weight, base_period. One NATIONAL row per day follows the route rows."
     >
-      <Async state={national} isEmpty={(d) => d.series.length === 0} empty="No index values to export yet.">
+      <Async state={national} isEmpty={(d) => d.series.length === 0} empty={noDataHint()}>
         {(d) => {
           const [minDate, maxDate] = [d.series[0].period, d.series[d.series.length - 1].period]
           // Keyed on the range so the form resets if the data changes (e.g. after a reseed).

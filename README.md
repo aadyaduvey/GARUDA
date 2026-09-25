@@ -17,27 +17,41 @@ Prerequisites: [uv](https://docs.astral.sh/uv/) (it fetches Python 3.11 itself),
 pnpm start
 ```
 
-That one command installs everything, seeds the database on first run (14 days of
-synthetic fares), builds the index, and starts:
+That one command installs everything, seeds the demo database on first run (14 days of
+synthetic fares), builds the index, and starts three things:
 
 - Dashboard: **http://localhost:5173**
 - API: http://127.0.0.1:8000 (interactive docs at `/docs`)
+- The **live collector**: scrapes real Akasa Air fares every day at 06:00 IST (and right away if
+  today has not been collected yet), then rebuilds the live index. The dashboard picks up new
+  data by itself within 30 seconds.
 
-Stop with Ctrl+C. It is safe to re-run; an existing database is kept.
+Stop with Ctrl+C. It is safe to re-run; existing databases are kept.
+
+### Two datasets
+
+The switch at the top right of the dashboard chooses between:
+
+| Dataset | What it is | Use it for |
+|---|---|---|
+| **Demo data** | 14 days of synthetic fares for all 3 airlines, with one planted anomaly | The demo: stable numbers that show every feature |
+| **Live · Akasa** | Real Akasa Air fares only (~5% of the market), collected daily | Proof it works on real data. Its first 7 days form the base week; until then values are provisional |
+
+Live scrapes never touch the demo data.
 
 | Command | What it does |
 |---|---|
 | `pnpm start` | Set up (first run) and run the API + dashboard |
-| `pnpm reseed` | Wipe and reseed the synthetic data, rebuild the index |
-| `pnpm scrape` | Live scrape batch (Akasa Air) → ingest → rebuild index |
+| `pnpm reseed` | Wipe and reseed the demo data, rebuild its index |
+| `pnpm scrape` | One live batch now (Akasa Air) → live database → rebuild live index |
 | `pnpm scrape --airline QP --route DEL-BOM` | Narrow live scrape, about 30 seconds |
-| `pnpm scrape:offline` | Replay 3 cached real fares, no network |
+| `pnpm scrape:offline` | Replay 3 cached real fares into the live database, no network |
+| `pnpm verify` | Cross-check scraped prices against Akasa's own flight search (8 checks, ~1 minute) |
 | `pnpm test` | Backend tests + frontend type-check, build and lint |
 
 ## Demo click-path (3 minutes)
 
-Before recording, run `pnpm reseed` so the headline number is the clean seeded index
-(live rows mixed into the synthetic seed move today's value; see Limitations).
+Start on **Demo data** (switch at the top right).
 
 1. **National Index** — "This is the national domestic airfare sub-index. Today it stands
    at *[headline number]*, against a base week of 100." Point at the spike on the trend line.
@@ -50,9 +64,11 @@ Before recording, run `pnpm reseed` so the headline number is the clean seeded i
    same way." Click the route to jump back to its chart.
 5. **CPI Export** — "Route, period, index value, weight, base period: the shape MoSPI's CPI
    series consumes. Pick a date range and download."
-6. **Live** — in a terminal, `pnpm scrape --airline QP --route DEL-BOM`. The header strip
-   switches to "Akasa Air live" within a minute (or on refresh) and the index updates.
-   "These fares were just pulled from Akasa Air's own site."
+6. **Live** — flip the switch to **Live · Akasa**. "This is the same system on real fares,
+   collected automatically from Akasa Air every morning since *[first day]*." Optionally run
+   `pnpm scrape --airline QP --route DEL-BOM` in a terminal and watch the header update.
+7. **Data check** (if asked) — `pnpm verify`: "Every scraped price matches the cheapest flight
+   in Akasa's own search for the same airports."
 
 ## Methodology
 
@@ -83,6 +99,6 @@ QA_REPORT.md  test results and known limitations
 ## Limitations
 
 See [QA_REPORT.md](QA_REPORT.md). In short: only Akasa Air is scraped live (IndiGo's
-robots.txt forbids it; Air India sits behind bot protection), the base period is the first
-seeded week rather than 2024, and live fares are compared against a synthetic base until a
-real base week has been collected.
+robots.txt forbids it; Air India sits behind bot protection, and every other Indian travel
+site also forbids automated flight searches), the base period is the first week of data
+rather than 2024, and the live collector only runs while `pnpm start` is running.

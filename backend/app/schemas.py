@@ -100,7 +100,11 @@ class ScraperRunOut(BaseModel):
 
 
 class StatusOut(BaseModel):
+    dataset: str  # "demo" | "live"
+    first_period: date | None
     latest_period: date | None
+    days_collected: int  # periods with a national index value
+    base_days: int  # periods that form the base (= 100); the index is provisional until reached
     fares_by_source: dict[str, int]
     last_live_fare_at: datetime | None  # newest non-synthetic fare
     last_run: ScraperRunOut | None

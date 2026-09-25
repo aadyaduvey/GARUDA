@@ -2,6 +2,20 @@
 
 export const API_URL: string = import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:8000'
 
+/** demo = synthetic seed (stable numbers); live = real scraped fares, collected daily. */
+export type Dataset = 'demo' | 'live'
+let dataset: Dataset = 'demo'
+/** Every request is sent for this dataset. App sets it before rendering and on each switch. */
+export const setDataset = (d: Dataset) => {
+  dataset = d
+}
+
+/** What to tell the viewer when the current dataset has nothing to show yet. */
+export const noDataHint = () =>
+  dataset === 'live'
+    ? 'No live fares yet. Run `pnpm scrape`, or keep `pnpm start` running: it collects every day at 06:00 IST.'
+    : 'No index values yet. Seed the demo data with `pnpm reseed`.'
+
 export type Route = { id: number; origin: string; destination: string; label: string; dgca_weight: number }
 export type BasePeriod = { start: string; end: string }
 
@@ -36,16 +50,22 @@ export type SourceStatus = {
 }
 export type ScraperRun = { run_at: string; mode: 'live' | 'dry_run'; index_rebuilt: boolean; sources: SourceStatus[] }
 export type Status = {
+  dataset: Dataset
+  first_period: string | null
   latest_period: string | null
+  days_collected: number
+  base_days: number
   fares_by_source: Record<string, number>
   last_live_fare_at: string | null
   last_run: ScraperRun | null
 }
 
 async function get(path: string): Promise<Response> {
+  const url = new URL(`${API_URL}${path}`)
+  url.searchParams.set('dataset', dataset)
   let response: Response
   try {
-    response = await fetch(`${API_URL}${path}`)
+    response = await fetch(url)
   } catch {
     throw new Error(`Cannot reach the GARUDA API at ${API_URL}. Start everything with 'pnpm start' in the project folder.`)
   }

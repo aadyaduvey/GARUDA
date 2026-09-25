@@ -9,8 +9,9 @@ from sqlmodel import Session, func, select
 from app.models import Fare, IndexValue
 from app.pipeline.ingest import ingest
 from app.scraper import scheduler
-from app.scraper.akasa import parse_low_fares
+from app.scraper.akasa import cheapest_same_airports, parse_low_fares
 from app.scraper.base import FareRow, Scraper, ScraperError, collection_plan, select_quotes
+from app.scraper.verify import Check
 from app.seed import seed
 
 TODAY = date(2026, 9, 25)  # a Friday
@@ -150,3 +151,43 @@ def test_dry_run_without_cache_fails_cleanly(seeded: Engine, tmp_path: Path) -> 
     report = run(seeded, tmp_path, {"QP": FakeScraper("QP")}, dry_run=True)
     assert report["sources"][0]["status"] == "failed"
     assert "no cached sample" in report["sources"][0]["error"]
+
+
+# --- Cross-check helpers (verify.py) -----------------------------------------
+
+
+def test_cheapest_same_airports_ignores_other_airports_in_the_city() -> None:
+    # Akasa's search is city-wide: BLR->DXN (Noida) is cheaper but is not the BLR-DEL route.
+    payload = {
+        "data": {
+            "faresAvailable": [
+                {"key": "k1", "value": {"totals": {"fareTotal": 8714.0}}},
+                {"key": "k2", "value": {"totals": {"fareTotal": 8121.0}}},
+                {"key": "k3", "value": {"totals": {"fareTotal": 9150.0}}},
+            ],
+            "results": [
+                {"trips": [{"journeysAvailableByMarket": {"BLR|DEL": [
+                    {"designator": {"origin": "BLR", "destination": "DEL"}, "fares": [{"fareAvailabilityKey": "k1"}, {"fareAvailabilityKey": "k3"}]},
+                    {"designator": {"origin": "BLR", "destination": "DXN"}, "fares": [{"fareAvailabilityKey": "k2"}]},
+                ]}}]}
+            ],
+        }
+    }
+    assert cheapest_same_airports(payload, "BLR", "DEL") == 8714.0
+    assert cheapest_same_airports(payload, "BLR", "DXN") == 8121.0
+    assert cheapest_same_airports(payload, "BLR", "BOM") is None
+    assert cheapest_same_airports({"data": None}, "BLR", "DEL") is None
+
+
+def test_check_matches_within_a_rupee() -> None:
+    assert Check("DEL-BOM", TODAY, 1, 6880.0, 6880.0).matches
+    assert not Check("DEL-BOM", TODAY, 1, 6880.0, 6850.0).matches
+    assert not Check("DEL-BOM", TODAY, 1, None, 6880.0).matches
+
+
+def test_collected_today_looks_at_scraped_fares_only(seeded: Engine) -> None:
+    assert not scheduler.collected_today(seeded)  # synthetic fares do not count
+    now = datetime.now(timezone.utc)
+    with Session(seeded) as session:
+        ingest(session, [FareRow("QP", "DEL", "BOM", 6880.0, 1, "SAT", date(2026, 9, 26), "economy", now, "akasa_lowfare")])
+    assert scheduler.collected_today(seeded)

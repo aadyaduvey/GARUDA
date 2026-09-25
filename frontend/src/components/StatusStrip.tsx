@@ -1,9 +1,5 @@
-import { useEffect } from 'react'
-import { type SourceStatus, api } from '../api'
+import type { SourceStatus, Status } from '../api'
 import { fmtDate, fmtTimeIST } from '../format'
-import { useApi } from '../useApi'
-
-const REFRESH_MS = 60_000
 
 const SOURCE_LABEL: Record<string, string> = { synthetic: 'synthetic seed', akasa_lowfare: 'live Akasa Air' }
 
@@ -15,32 +11,24 @@ const STATE: Record<SourceStatus['status'], { icon: string; label: string; color
   unavailable: { icon: '–', label: 'not scraped', color: 'var(--color-ink-2)' },
 }
 
-/** Data freshness + scraper health, refreshed every minute. Renders nothing until the API answers. */
-export function StatusStrip() {
-  const status = useApi(api.status, [])
-  const { reload } = status
-  useEffect(() => {
-    const id = window.setInterval(reload, REFRESH_MS)
-    return () => window.clearInterval(id)
-  }, [reload])
-
-  const s = status.data
-  if (!s) return null
-  const counts = Object.entries(s.fares_by_source).sort(([, a], [, b]) => b - a)
-  const run = s.last_run
+/** Data freshness + scraper health for the current dataset. Renders nothing until the API answers. */
+export function StatusStrip({ status }: { status: Status | undefined }) {
+  if (!status) return null
+  const counts = Object.entries(status.fares_by_source).sort(([, a], [, b]) => b - a)
+  const run = status.last_run
 
   return (
     <div className="border-b border-line bg-wash text-sm text-ink-2">
       <div className="mx-auto flex max-w-[1400px] flex-wrap items-center gap-x-6 gap-y-1 px-6 py-2">
         <span>
-          <span className="font-semibold text-ink">Index through</span> {s.latest_period ? fmtDate(s.latest_period) : '—'}
+          <span className="font-semibold text-ink">Index through</span> {status.latest_period ? fmtDate(status.latest_period) : '—'}
         </span>
         <span className="tnum">
           <span className="font-semibold text-ink">Fares</span>{' '}
-          {counts.length ? counts.map(([src, n]) => `${n.toLocaleString('en-IN')} ${SOURCE_LABEL[src] ?? src}`).join(' · ') : 'none'}
+          {counts.length ? counts.map(([src, n]) => `${n.toLocaleString('en-IN')} ${SOURCE_LABEL[src] ?? src}`).join(' · ') : 'none yet'}
         </span>
         <span>
-          <span className="font-semibold text-ink">Last scrape</span>{' '}
+          <span className="font-semibold text-ink">Last live scrape</span>{' '}
           {run ? `${fmtTimeIST(run.run_at)}${run.mode === 'dry_run' ? ' (offline replay)' : ''}` : 'not run yet'}
         </span>
         {run && (

@@ -10,10 +10,11 @@ Run on 25 Sep 2026, Windows 11, Python 3.11.16, Node 24, pnpm 12. Command: `pnpm
 | Synthetic seed: row count, yield-curve shape, weights, outlier bounds (`test_seed.py`) | 3 | PASS |
 | Index build on seeded data: rows written, base ≈ 100, planted spike flagged (`test_build_index.py`) | 3 | PASS |
 | API: every endpoint, filters, 404 / 422, CSV format, CORS (`test_api.py`) | 10 | PASS |
-| Scraper & batch: collection plan, parsing, ingest, idempotency, failure isolation, dry-run, unavailable airlines (`test_scraper.py`) | 10 | PASS |
+| Scraper & batch: collection plan, parsing, ingest, idempotency, failure isolation, dry-run, unavailable airlines, same-airport cross-check, daily catch-up (`test_scraper.py`) | 13 | PASS |
 | Edge cases (`test_edge_cases.py`) | 7 | PASS |
+| Demo vs live databases: `?dataset=` switch, live bootstrap, live index leaves demo untouched (`test_datasets.py`) | 3 | PASS |
 | Smoke: `/health` (`test_smoke.py`) | 1 | PASS |
-| **Backend total** | **49** | **PASS** |
+| **Backend total** | **55** | **PASS** |
 | Frontend type-check + production build | — | PASS |
 | Frontend lint (oxlint) | — | PASS, 0 warnings |
 
@@ -42,6 +43,10 @@ No test makes a network call.
 | Dashboard at 1920×1080 and 1024×768, all 5 views | PASS, no console errors |
 | Dashboard with the API down | Clear error message with the start command and a retry button |
 | Live scrape, Akasa Air, all 10 routes | 72 real fares from 9 routes; index rebuilt |
+| Data accuracy (`pnpm verify`): scraped price vs cheapest flight in Akasa's own search, same airports | 8/8 exact matches (DEL-BOM, BLR-DEL; 1/7/14/30-day windows) |
+| Other platforms for cross-validation | None usable: MakeMyTrip, Goibibo, ixigo, EaseMyTrip, Yatra, Cleartrip, Kayak, Skyscanner and Google Flights all disallow automated flight search |
+| Daily collector (`--daily`) | Starts, catches up if today is missing, schedules 06:00 IST |
+| Dashboard dataset switch | Demo and Live views render; choice remembered; views refresh when new data lands |
 | Offline replay (`--dry-run`) | Works without network; no duplicates on repeat |
 | Header strip after live / offline / no scrape | Shows index date, fare counts by source, last scrape time (IST) and per-airline status |
 
@@ -56,10 +61,8 @@ No test makes a network call.
    (GOI). The basket is unchanged; the batch logs the route and moves on.
 3. **Base period is the first seeded week, not 2024.** Every screen and export row states the
    actual base period. A 2024 base needs 2024 fare data.
-4. **Live fares are compared against a synthetic base.** Live rows join today's period and
-   the lowest fare per quote wins, so a live scrape moves today's index for a reason that is
-   not a market move. Reseed before recording the demo. For a real index, collect a real base
-   week first.
+4. **The live index is provisional for its first 7 days** while its base week fills up, and it
+   covers Akasa Air only. The dashboard says both in a banner on the Live view.
 5. **Collection window is a minimum lead time.** The departure priced for "7 days ahead,
    Tuesday" is the first Tuesday at least 7 days out, so the actual lead time can be up to 6
    days longer.
@@ -70,3 +73,7 @@ No test makes a network call.
    with a plain message saying which port is busy and how to free it.
 8. **Test-client deprecation warning.** pytest prints one Starlette warning about `httpx`; it
    does not affect results.
+9. **The live collector runs only while `pnpm start` is running.** Days when the computer is off
+   are missing; the index carries the last fares forward (flagged `imputed`) until the next
+   collection. For unattended collection, schedule `pnpm scrape` daily with Windows Task
+   Scheduler or run the project on a small always-on server.

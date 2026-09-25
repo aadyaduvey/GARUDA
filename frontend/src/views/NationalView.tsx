@@ -1,5 +1,5 @@
 import { CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { type Anomaly, api } from '../api'
+import { type Anomaly, api, noDataHint } from '../api'
 import { TooltipCard } from '../components/chart'
 import { C, CHART_HEIGHT, axisProps, endLabel, gridProps } from '../components/chartTheme'
 import { Async, Card, DataTable, StatTile } from '../components/ui'
@@ -10,7 +10,7 @@ export function NationalView({ anomalies }: { anomalies: Anomaly[] | undefined }
   const national = useApi(api.national, [])
 
   return (
-    <Async state={national} isEmpty={(d) => d.series.length === 0} empty="No index values yet. Seed the database: uv run python -m app.seed">
+    <Async state={national} isEmpty={(d) => d.series.length === 0} empty={noDataHint()}>
       {({ series, latest, base_period }) => {
         const last = latest!
         const prev = series.at(-2)

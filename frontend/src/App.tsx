@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react'
-import { api } from './api'
+import { useEffect, useRef, useState } from 'react'
+import { type Dataset, type Status, api, noDataHint, setDataset } from './api'
+import { LiveBanner } from './components/LiveBanner'
 import { StatusStrip } from './components/StatusStrip'
 import { Async } from './components/ui'
 import { useApi } from './useApi'
@@ -31,12 +32,58 @@ function useHashView(): [ViewId, (v: ViewId) => void] {
   return [view, (v) => (window.location.hash = v)]
 }
 
+const DATASET_KEY = 'garuda.dataset'
+const STATUS_POLL_MS = 30_000
+
+function storedDataset(): Dataset {
+  try {
+    return localStorage.getItem(DATASET_KEY) === 'live' ? 'live' : 'demo'
+  } catch {
+    return 'demo'
+  }
+}
+
+const initialDataset = storedDataset()
+setDataset(initialDataset)
+
+/** Changes whenever new data lands (a scrape, a reseed), so the views know to refetch. */
+const dataSignature = (s: Status | undefined) =>
+  s ? `${s.latest_period}|${Object.values(s.fares_by_source).reduce((a, b) => a + b, 0)}|${s.last_run?.run_at}` : ''
+
 export default function App() {
   const [view, go] = useHashView()
-  const routes = useApi(api.routes, [])
-  const anomalies = useApi(api.anomalies, [])
+  const [dataset, setDatasetState] = useState<Dataset>(initialDataset)
+  const [refresh, setRefresh] = useState(0)
+  const routes = useApi(api.routes, [dataset, refresh])
+  const anomalies = useApi(api.anomalies, [dataset, refresh])
+  const status = useApi(api.status, [dataset])
   const [routeId, setRouteId] = useState<number>()
   const selectedRoute = routeId ?? routes.data?.[0]?.id
+
+  // Poll the status; when the data underneath changes, remount the views so every chart refetches.
+  const { reload: reloadStatus } = status
+  useEffect(() => {
+    const id = window.setInterval(reloadStatus, STATUS_POLL_MS)
+    return () => window.clearInterval(id)
+  }, [reloadStatus])
+  const signature = dataSignature(status.data)
+  const lastSignature = useRef(signature)
+  useEffect(() => {
+    if (lastSignature.current && signature && signature !== lastSignature.current) setRefresh((n) => n + 1)
+    lastSignature.current = signature
+  }, [signature])
+
+  const switchDataset = (d: Dataset) => {
+    setDataset(d)
+    try {
+      localStorage.setItem(DATASET_KEY, d)
+    } catch {
+      /* private mode etc.: the choice just won't persist */
+    }
+    lastSignature.current = ''
+    setRouteId(undefined)
+    setDatasetState(d)
+  }
 
   return (
     <div className="min-h-screen">
@@ -49,33 +96,48 @@ export default function App() {
           <p className="text-white/75">Prototype for MoSPI · Smart India Hackathon SIH26056</p>
         </div>
       </header>
-      <StatusStrip />
+      <StatusStrip status={status.data} />
 
       <nav className="border-b border-line bg-white">
-        <ul className="mx-auto flex max-w-[1400px] flex-wrap px-6">
-          {VIEWS.map((v) => (
-            <li key={v.id}>
+        <div className="mx-auto flex max-w-[1400px] flex-wrap items-center justify-between gap-x-6 px-6">
+          <ul className="flex flex-wrap">
+            {VIEWS.map((v) => (
+              <li key={v.id}>
+                <button
+                  onClick={() => go(v.id)}
+                  aria-current={view === v.id ? 'page' : undefined}
+                  className={`border-b-4 px-4 py-3 text-lg font-medium transition-colors ${
+                    view === v.id ? 'border-accent text-navy-900' : 'border-transparent text-ink-2 hover:text-navy-900'
+                  }`}
+                >
+                  {v.label}
+                  {v.id === 'anomalies' && anomalies.data && anomalies.data.length > 0 && (
+                    <span className="ml-2 rounded-full bg-critical px-2 py-0.5 text-sm font-semibold text-white">{anomalies.data.length}</span>
+                  )}
+                </button>
+              </li>
+            ))}
+          </ul>
+          <div role="group" aria-label="Dataset" className="my-2 flex rounded-md border border-navy-800/40 p-0.5">
+            {(['demo', 'live'] as const).map((d) => (
               <button
-                onClick={() => go(v.id)}
-                aria-current={view === v.id ? 'page' : undefined}
-                className={`border-b-4 px-4 py-3 text-lg font-medium transition-colors ${
-                  view === v.id ? 'border-accent text-navy-900' : 'border-transparent text-ink-2 hover:text-navy-900'
-                }`}
+                key={d}
+                onClick={() => switchDataset(d)}
+                aria-pressed={dataset === d}
+                className={`rounded px-3 py-1.5 font-medium ${dataset === d ? 'bg-navy-900 text-white' : 'text-ink-2 hover:text-navy-900'}`}
               >
-                {v.label}
-                {v.id === 'anomalies' && anomalies.data && anomalies.data.length > 0 && (
-                  <span className="ml-2 rounded-full bg-critical px-2 py-0.5 text-sm font-semibold text-white">{anomalies.data.length}</span>
-                )}
+                {d === 'demo' ? 'Demo data' : 'Live · Akasa'}
               </button>
-            </li>
-          ))}
-        </ul>
+            ))}
+          </div>
+        </div>
       </nav>
 
-      <main className="mx-auto max-w-[1400px] px-6 py-8">
+      <main key={`${dataset}-${refresh}`} className="mx-auto max-w-[1400px] px-6 py-8">
+        {dataset === 'live' && <LiveBanner status={status.data} />}
         {view === 'national' && <NationalView anomalies={anomalies.data} />}
         {(view === 'routes' || view === 'yield') && (
-          <Async state={routes} isEmpty={(r) => r.length === 0} empty="No routes yet. Seed the database: uv run python -m app.seed">
+          <Async state={routes} isEmpty={(r) => r.length === 0} empty={noDataHint()}>
             {(list) => {
               const View = view === 'routes' ? RouteExplorer : YieldCurveView
               return <View routes={list} routeId={selectedRoute ?? list[0].id} onRouteChange={setRouteId} />

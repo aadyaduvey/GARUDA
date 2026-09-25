@@ -1,12 +1,13 @@
 """Data freshness and scraper status for the dashboard header."""
 import json
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from pydantic import ValidationError
 from sqlmodel import Session, func, select
 
 from app import db
-from app.db import get_session
+from app.build_index import BASE_DAYS
+from app.db import Dataset, get_session
 from app.models import Fare, IndexValue
 from app.schemas import ScraperRunOut, StatusOut
 
@@ -24,10 +25,15 @@ def last_scraper_run() -> ScraperRunOut | None:
 
 
 @router.get("/status", response_model=StatusOut)
-def status(session: Session = Depends(get_session)) -> StatusOut:
+def status(dataset: Dataset = Query("demo"), session: Session = Depends(get_session)) -> StatusOut:
     by_source = dict(session.exec(select(Fare.source, func.count()).group_by(Fare.source)).all())
+    is_national = IndexValue.route_id.is_(None)
     return StatusOut(
+        dataset=dataset,
+        first_period=session.exec(select(func.min(IndexValue.period)).where(is_national)).one(),
         latest_period=session.exec(select(func.max(IndexValue.period))).one(),
+        days_collected=session.exec(select(func.count()).select_from(IndexValue).where(is_national)).one(),
+        base_days=BASE_DAYS,
         fares_by_source=by_source,
         last_live_fare_at=session.exec(select(func.max(Fare.scrape_ts)).where(Fare.source != SYNTHETIC)).one(),
         last_run=last_scraper_run(),

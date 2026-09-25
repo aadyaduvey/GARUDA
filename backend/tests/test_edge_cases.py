@@ -142,6 +142,7 @@ def test_status_reports_last_scraper_run(seeded: Engine, api: TestClient, tmp_pa
         session.commit()
 
     body = api.get("/api/status").json()
+    assert (body["dataset"], body["first_period"], body["days_collected"], body["base_days"]) == ("demo", "2026-01-05", 14, 7)
     assert body["latest_period"] == "2026-01-18"
     assert body["fares_by_source"] == {"synthetic": 3360, "akasa_lowfare": 1}
     assert body["last_live_fare_at"].startswith("2026-01-18T00:45")

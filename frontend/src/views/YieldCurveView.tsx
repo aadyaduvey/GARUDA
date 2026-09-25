@@ -39,6 +39,9 @@ export function YieldCurveView({ routes, routeId, onRouteChange }: { routes: Rou
           const wide = toWide(series)
           const latest = wide[wide.length - 1]
           const fare = (days: number) => Number(latest[key(days)])
+          const scale = niceScale(series.map((p) => p.avg_fare), 0)
+          // End labels only when the 1d and 30d lines end far enough apart not to collide.
+          const labelsFit = Math.abs(fare(1) - fare(30)) / (scale.domain[1] - scale.domain[0]) > 0.06
           return (
             <div className="space-y-6">
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -57,7 +60,7 @@ export function YieldCurveView({ routes, routeId, onRouteChange }: { routes: Rou
                   <LineChart data={wide} margin={{ top: 12, right: 130, bottom: 4, left: 8 }}>
                     <CartesianGrid {...gridProps} />
                     <XAxis dataKey="period" tickFormatter={fmtDay} {...axisProps} minTickGap={24} />
-                    <YAxis {...axisProps} width={80} {...niceScale(series.map((p) => p.avg_fare), 0)} tickFormatter={fmtINR} />
+                    <YAxis {...axisProps} width={80} {...scale} tickFormatter={fmtINR} />
                     <Tooltip
                       cursor={{ stroke: C.axis }}
                       content={({ active, payload, label }) =>
@@ -78,7 +81,7 @@ export function YieldCurveView({ routes, routeId, onRouteChange }: { routes: Rou
                         strokeWidth={2}
                         dot={false}
                         activeDot={{ r: 5, stroke: C.surface, strokeWidth: 2 }}
-                        label={w.endLabel ? endLabel(wide.length - 1, (v) => `${w.days}d · ${fmtINR(v)}`) : undefined}
+                        label={w.endLabel && labelsFit ? endLabel(wide.length - 1, (v) => `${w.days}d · ${fmtINR(v)}`) : undefined}
                         isAnimationActive={false}
                       />
                     ))}
