@@ -5,7 +5,7 @@ National Index, Route Explorer, Yield Curve, Anomaly Alerts, CPI Export.
 
 ```bash
 pnpm install
-pnpm dev        # http://localhost:5173, expects the API at http://127.0.0.1:8000
+pnpm dev        # http://localhost:5174, expects the API at http://127.0.0.1:8010
 pnpm build      # type-check + production build
 pnpm lint
 ```

@@ -2,8 +2,8 @@
 import net from 'node:net'
 
 const PORTS = [
-  [8000, 'API'],
-  [5173, 'dashboard'],
+  [8010, 'API'],
+  [5174, 'dashboard'],
 ]
 
 // A port counts as taken if we cannot listen on it over IPv4 or IPv6 (Vite binds "localhost").

@@ -5,7 +5,7 @@
   "scripts": {
     "start": "pnpm install && pnpm run setup && pnpm run dev",
     "setup": "uv sync --directory backend && uv run --directory backend python -m app.bootstrap && pnpm --dir frontend install",
-    "dev": "node scripts/check-ports.mjs && concurrently --kill-others --names api,web,collect --prefix-colors blue,magenta,green \"uv run --directory backend uvicorn app.main:app --host 127.0.0.1 --port 8000\" \"pnpm --dir frontend dev --port 5173 --strictPort\" \"uv run --directory backend python -m app.scraper.scheduler --daily\"",
+    "dev": "node scripts/check-ports.mjs && concurrently --kill-others --names api,web,collect --prefix-colors blue,magenta,green \"uv run --directory backend uvicorn app.main:app --host 127.0.0.1 --port 8010\" \"pnpm --dir frontend dev --port 5174 --strictPort\" \"uv run --directory backend python -m app.scraper.scheduler --daily\"",
     "test": "uv run --directory backend pytest && pnpm --dir frontend build && pnpm --dir frontend lint",
     "reseed": "uv run --directory backend python -m app.seed",
     "scrape": "uv run --directory backend python -m app.scraper.scheduler",

@@ -20,8 +20,8 @@ pnpm start
 That one command installs everything, seeds the demo database on first run (14 days of
 synthetic fares), builds the index, and starts three things:
 
-- Dashboard: **http://localhost:5173**
-- API: http://127.0.0.1:8000 (interactive docs at `/docs`)
+- Dashboard: **http://localhost:5174**
+- API: http://127.0.0.1:8010 (interactive docs at `/docs`)
 - The **live collector**: scrapes real Akasa Air fares every day at 06:00 IST (and right away if
   today has not been collected yet), then rebuilds the live index. The dashboard picks up new
   data by itself within 30 seconds.

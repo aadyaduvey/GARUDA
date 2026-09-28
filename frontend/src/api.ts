@@ -1,6 +1,6 @@
 // Typed client for the GARUDA API. Types mirror backend/app/schemas.py.
 
-export const API_URL: string = import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:8000'
+export const API_URL: string = import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:8010'
 
 /** demo = synthetic seed (stable numbers); live = real scraped fares, collected daily. */
 export type Dataset = 'demo' | 'live'

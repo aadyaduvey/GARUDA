@@ -14,7 +14,7 @@ Look: government/institutional. Dark-blue header, white background, large
 fonts, high contrast, readable on a projector. Must work at 1920x1080 and
 1024x768.
 
-Consume the backend API at http://localhost:8000. If an endpoint is not ready,
+Consume the backend API at http://localhost:8010. If an endpoint is not ready,
 mock it behind a single typed API client module so the swap to the real API is
 one change. Every view handles loading, empty, and error states. Do not
 compute index values in the browser; display what the API returns.

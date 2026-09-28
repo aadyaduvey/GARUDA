@@ -101,5 +101,5 @@ def test_export_filters_and_empty_range(client: TestClient) -> None:
 
 
 def test_cors_allows_dashboard_origin(client: TestClient) -> None:
-    response = client.get("/health", headers={"Origin": "http://localhost:5173"})
-    assert response.headers["access-control-allow-origin"] == "http://localhost:5173"
+    response = client.get("/health", headers={"Origin": "http://localhost:5174"})
+    assert response.headers["access-control-allow-origin"] == "http://localhost:5174"

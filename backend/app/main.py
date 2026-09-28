@@ -18,7 +18,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
 
 
 # Dashboard origins; override with a comma-separated GARUDA_CORS_ORIGINS.
-CORS_ORIGINS = os.environ.get("GARUDA_CORS_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173").split(",")
+CORS_ORIGINS = os.environ.get("GARUDA_CORS_ORIGINS", "http://localhost:5174,http://127.0.0.1:5174").split(",")
 
 app = FastAPI(title="GARUDA", description="Real-time Airfare Price Index", lifespan=lifespan)
 app.add_middleware(

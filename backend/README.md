@@ -6,7 +6,7 @@ ingestion pipeline, and Playwright scrapers.
 ```bash
 uv sync
 uv run python -m app.seed                  # wipe, seed 14 days of synthetic fares, build the index
-uv run uvicorn app.main:app --reload       # API on http://127.0.0.1:8000 (docs at /docs)
+uv run uvicorn app.main:app --reload --port 8010   # API on http://127.0.0.1:8010 (docs at /docs)
 uv run pytest
 ```
 

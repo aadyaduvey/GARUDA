@@ -68,7 +68,7 @@ No test makes a network call.
    days longer.
 6. **Market shares and base fares in the seed are estimates** (`backend/app/seed.py`).
    Replace them with cited DGCA figures before quoting them.
-7. **`pnpm start` uses fixed ports 8000 and 5173.** If either is taken (usually by an
+7. **`pnpm start` uses fixed ports 8010 and 5174.** If either is taken (usually by an
    earlier `pnpm dev` or `uvicorn` still running), `scripts/check-ports.mjs` stops the start
    with a plain message saying which port is busy and how to free it.
 8. **Test-client deprecation warning.** pytest prints one Starlette warning about `httpx`; it
