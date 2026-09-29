@@ -4,8 +4,10 @@
   "description": "GARUDA real-time airfare price index: API + dashboard. `pnpm start` sets up and runs everything.",
   "scripts": {
     "start": "pnpm install && pnpm run setup && pnpm run dev",
+    "start:lan": "pnpm install && pnpm run setup && pnpm run dev:lan",
     "setup": "uv sync --directory backend && uv run --directory backend python -m app.bootstrap && pnpm --dir frontend install",
     "dev": "node scripts/check-ports.mjs && concurrently --kill-others --names api,web,collect --prefix-colors blue,magenta,green \"uv run --directory backend uvicorn app.main:app --host 127.0.0.1 --port 8010\" \"pnpm --dir frontend dev --port 5174 --strictPort\" \"uv run --directory backend python -m app.scraper.scheduler --daily\"",
+    "dev:lan": "node scripts/check-ports.mjs && concurrently --kill-others --names api,web,collect --prefix-colors blue,magenta,green \"uv run --directory backend uvicorn app.main:app --host 127.0.0.1 --port 8010\" \"pnpm --dir frontend dev --port 5174 --strictPort --host\" \"uv run --directory backend python -m app.scraper.scheduler --daily\"",
     "test": "uv run --directory backend pytest && pnpm --dir frontend build && pnpm --dir frontend lint",
     "reseed": "uv run --directory backend python -m app.seed",
     "scrape": "uv run --directory backend python -m app.scraper.scheduler",

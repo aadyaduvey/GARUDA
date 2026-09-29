@@ -28,6 +28,29 @@ synthetic fares), builds the index, and starts three things:
 
 Stop with Ctrl+C. It is safe to re-run; existing databases are kept.
 
+### Open it on another device (phone, second laptop, projector PC)
+
+`pnpm start` is private to this computer. To open the dashboard from another device on the
+same Wi-Fi, start it with:
+
+```bash
+pnpm start:lan
+```
+
+The `web` line prints a **Network** address such as `http://192.168.1.3:5174/`; open that on the
+other device. Only the dashboard is exposed; it fetches data through itself, and the API stays
+private to this computer.
+
+If the other device cannot connect:
+
+- **Windows Firewall.** On the first run Windows asks whether to allow Node.js; click *Allow*.
+  If the Wi-Fi is set to *Public*, Windows blocks it anyway: on a trusted network set it to
+  *Private* (Settings → Network & internet → Wi-Fi → your network → Network profile type).
+- **Venue or college Wi-Fi** often blocks devices from reaching each other. Turn on your phone's
+  hotspot and connect both devices to it instead.
+- Both devices must be on the **same** network. Opening it from anywhere on the internet needs a
+  deployment or a tunnel, which this PoC does not set up.
+
 ### Two datasets
 
 The switch at the top right of the dashboard chooses between:
@@ -42,6 +65,7 @@ Live scrapes never touch the demo data.
 | Command | What it does |
 |---|---|
 | `pnpm start` | Set up (first run) and run the API + dashboard |
+| `pnpm start:lan` | Same, but the dashboard can also be opened from other devices on your Wi-Fi |
 | `pnpm reseed` | Wipe and reseed the demo data, rebuild its index |
 | `pnpm scrape` | One live batch now (Akasa Air) → live database → rebuild live index |
 | `pnpm scrape --airline QP --route DEL-BOM` | Narrow live scrape, about 30 seconds |

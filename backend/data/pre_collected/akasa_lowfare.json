@@ -1,38 +1,38 @@
 [
   {
     "airline": "QP",
-    "origin": "DEL",
-    "destination": "BOM",
-    "amount": 6880.0,
+    "origin": "BOM",
+    "destination": "DEL",
+    "amount": 6873.0,
     "advance_days": 1,
     "dep_dow": "TUE",
-    "dep_date": "2026-09-29",
+    "dep_date": "2026-10-06",
     "fare_class": "economy",
-    "scrape_ts": "2026-09-28T17:09:53.617902+00:00",
+    "scrape_ts": "2026-09-29T07:07:42.637508+00:00",
     "source": "akasa_lowfare"
   },
   {
     "airline": "QP",
-    "origin": "DEL",
-    "destination": "BOM",
-    "amount": 6880.0,
+    "origin": "BOM",
+    "destination": "DEL",
+    "amount": 6873.0,
     "advance_days": 1,
     "dep_dow": "SAT",
     "dep_date": "2026-10-03",
     "fare_class": "economy",
-    "scrape_ts": "2026-09-28T17:09:53.617902+00:00",
+    "scrape_ts": "2026-09-29T07:07:42.637508+00:00",
     "source": "akasa_lowfare"
   },
   {
     "airline": "QP",
-    "origin": "DEL",
-    "destination": "BOM",
-    "amount": 6880.0,
+    "origin": "BOM",
+    "destination": "DEL",
+    "amount": 6873.0,
     "advance_days": 7,
     "dep_dow": "TUE",
     "dep_date": "2026-10-06",
     "fare_class": "economy",
-    "scrape_ts": "2026-09-28T17:09:53.617902+00:00",
+    "scrape_ts": "2026-09-29T07:07:42.637508+00:00",
     "source": "akasa_lowfare"
   }
 ]

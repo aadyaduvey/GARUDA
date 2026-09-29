@@ -1,6 +1,7 @@
 // Typed client for the GARUDA API. Types mirror backend/app/schemas.py.
 
-export const API_URL: string = import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:8010'
+// Empty = same origin: the Vite dev server proxies /api to the backend (see vite.config.ts).
+export const API_URL: string = import.meta.env.VITE_API_URL ?? ''
 
 /** demo = synthetic seed (stable numbers); live = real scraped fares, collected daily. */
 export type Dataset = 'demo' | 'live'
@@ -61,13 +62,13 @@ export type Status = {
 }
 
 async function get(path: string): Promise<Response> {
-  const url = new URL(`${API_URL}${path}`)
+  const url = new URL(`${API_URL}${path}`, window.location.origin)
   url.searchParams.set('dataset', dataset)
   let response: Response
   try {
     response = await fetch(url)
   } catch {
-    throw new Error(`Cannot reach the GARUDA API at ${API_URL}. Start everything with 'pnpm start' in the project folder.`)
+    throw new Error(`Cannot reach the GARUDA API${API_URL ? ` at ${API_URL}` : ''}. Start everything with 'pnpm start' in the project folder.`)
   }
   if (!response.ok) {
     const body = await response.json().catch(() => null)
