@@ -11,16 +11,11 @@ export const setDataset = (d: Dataset) => {
   dataset = d
 }
 
-/** Published website (`vite build --mode static`): read exported snapshot files, no API server. */
-export const STATIC = import.meta.env.VITE_STATIC === '1'
-
 /** What to tell the viewer when the current dataset has nothing to show yet. */
 export const noDataHint = () =>
-  STATIC
-    ? 'This published copy has no data for this view yet.'
-    : dataset === 'live'
-      ? 'No live fares yet. Run `pnpm scrape`, or keep `pnpm start` running: it collects every day at 06:00 IST.'
-      : 'No index values yet. Seed the demo data with `pnpm reseed`.'
+  dataset === 'live'
+    ? 'No live fares yet. Run `pnpm scrape`, or keep `pnpm start` running: it collects every day at 06:00 IST.'
+    : 'No index values yet. Seed the demo data with `pnpm reseed`.'
 
 export type Route = { id: number; origin: string; destination: string; label: string; dgca_weight: number }
 export type BasePeriod = { start: string; end: string }
@@ -66,31 +61,7 @@ export type Status = {
   last_run: ScraperRun | null
 }
 
-// API path -> snapshot file written by backend/app/export_snapshot.py.
-const SNAPSHOT_FILES: [RegExp, (m: RegExpMatchArray) => string][] = [
-  [/^\/api\/routes$/, () => 'routes.json'],
-  [/^\/api\/index\/national$/, () => 'national.json'],
-  [/^\/api\/anomalies$/, () => 'anomalies.json'],
-  [/^\/api\/status$/, () => 'status.json'],
-  [/^\/api\/export\/cpi$/, () => 'cpi.csv'],
-  [/^\/api\/index\/route\/(\d+)$/, (m) => `route-${m[1]}.json`],
-  [/^\/api\/yield-curve\/(\d+)$/, (m) => `yield-${m[1]}.json`],
-]
-
-async function getSnapshot(path: string): Promise<Response> {
-  const bare = path.split('?')[0]
-  for (const [pattern, file] of SNAPSHOT_FILES) {
-    const m = bare.match(pattern)
-    if (!m) continue
-    const response = await fetch(`${import.meta.env.BASE_URL}snapshot/${dataset}/${file(m)}`)
-    if (!response.ok) throw new Error(`This published copy has no data for ${bare}.`)
-    return response
-  }
-  throw new Error(`This published copy has no data for ${bare}.`)
-}
-
 async function get(path: string): Promise<Response> {
-  if (STATIC) return getSnapshot(path)
   const url = new URL(`${API_URL}${path}`, window.location.origin)
   url.searchParams.set('dataset', dataset)
   let response: Response
@@ -115,16 +86,6 @@ export const api = {
   anomalies: () => json<Anomaly[]>('/api/anomalies'),
   yieldCurve: (id: number) => json<YieldCurve>(`/api/yield-curve/${id}`),
   status: () => json<Status>('/api/status'),
-  cpiCsv: async (start: string, end: string) => {
-    if (!STATIC) return (await get(`/api/export/cpi?${new URLSearchParams({ start, end })}`)).text()
-    // The snapshot holds the full CSV; keep the header plus rows whose period (column 2) is in range.
-    const [header, ...rows] = (await (await get('/api/export/cpi')).text()).trim().split('\n')
-    const inRange = rows.filter((row) => {
-      const period = row.split(',')[1]
-      return period >= start && period <= end
-    })
-    return [header, ...inRange].join('\n') + '\n'
-  },
-  /** When the published copy was exported (static mode only). */
-  snapshotMeta: async () => (await fetch(`${import.meta.env.BASE_URL}snapshot/meta.json`)).json() as Promise<{ generated_at: string }>,
+  cpiCsv: async (start: string, end: string) =>
+    (await get(`/api/export/cpi?${new URLSearchParams({ start, end })}`)).text(),
 }
