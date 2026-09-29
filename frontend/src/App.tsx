@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { type Dataset, type Status, api, noDataHint, setDataset } from './api'
+import { type Dataset, type Status, STATIC, api, noDataHint, setDataset } from './api'
 import { LiveBanner } from './components/LiveBanner'
 import { StatusStrip } from './components/StatusStrip'
 import { Async } from './components/ui'
@@ -57,6 +57,7 @@ export default function App() {
   const routes = useApi(api.routes, [dataset, refresh])
   const anomalies = useApi(api.anomalies, [dataset, refresh])
   const status = useApi(api.status, [dataset])
+  const snapshot = useApi(() => (STATIC ? api.snapshotMeta() : Promise.resolve(null)), [])
   const [routeId, setRouteId] = useState<number>()
   const selectedRoute = routeId ?? routes.data?.[0]?.id
 
@@ -96,7 +97,7 @@ export default function App() {
           <p className="text-white/75">Prototype for MoSPI · Smart India Hackathon SIH26056</p>
         </div>
       </header>
-      <StatusStrip status={status.data} />
+      <StatusStrip status={status.data} publishedAt={snapshot.data?.generated_at} />
 
       <nav className="border-b border-line bg-white">
         <div className="mx-auto flex max-w-[1400px] flex-wrap items-center justify-between gap-x-6 px-6">

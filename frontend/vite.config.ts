@@ -13,5 +13,7 @@ export default defineConfig({
     // The dashboard calls the API through this dev server (same origin), so it also works when
     // opened from another device (`pnpm start:lan`), where 127.0.0.1 would mean that device.
     proxy: { '/api': API, '/health': API },
+    // Accept requests arriving through a Cloudflare quick tunnel (`pnpm share`).
+    allowedHosts: ['.trycloudflare.com'],
   },
 })

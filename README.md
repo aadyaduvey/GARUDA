@@ -51,6 +51,37 @@ If the other device cannot connect:
 - Both devices must be on the **same** network. Opening it from anywhere on the internet needs a
   deployment or a tunnel, which this PoC does not set up.
 
+### Permanent public link and QR code (works even when this laptop is off)
+
+`pnpm website` publishes the dashboard as a static website on Netlify (free, never sleeps,
+opens instantly on any device and network). It exports every number the dashboard shows,
+for both Demo and Live, and the page header says **"Published copy · data as of …"**.
+
+First time (about 5 minutes):
+
+1. Create a free account at https://app.netlify.com/signup.
+2. Run `pnpm website`. A browser window asks you to authorise Netlify: click *Authorize*.
+3. In the terminal choose **Create & configure a new project**, pick your team, and type a
+   site name such as `garuda-sih26056`. Your permanent link is then
+   `https://garuda-sih26056.netlify.app`.
+4. Make the QR code: `pnpm qr https://garuda-sih26056.netlify.app` → saves `garuda-qr.png`.
+
+After that, run `pnpm website` whenever you want the published copy to show the latest live
+data (for example the morning of the demo). The link and QR code never change.
+
+### Open it from anywhere (a different network)
+
+A free Cloudflare quick tunnel gives the running dashboard a public `https://…trycloudflare.com`
+link that works on any device, on any network. No account needed.
+
+1. Install the tunnel tool once: `winget install --id Cloudflare.cloudflared`, then open a new terminal.
+2. Terminal 1: `pnpm start`
+3. Terminal 2: `pnpm share`, and copy the `https://….trycloudflare.com` link it prints.
+
+Keep in mind: this computer must stay on with both terminals running; the link changes every
+time you run `pnpm share`; anyone who has the link can view the dashboard (it is read-only);
+Ctrl+C in terminal 2 closes it. For a permanent address, deploy the project to a server instead.
+
 ### Two datasets
 
 The switch at the top right of the dashboard chooses between:
@@ -66,6 +97,9 @@ Live scrapes never touch the demo data.
 |---|---|
 | `pnpm start` | Set up (first run) and run the API + dashboard |
 | `pnpm start:lan` | Same, but the dashboard can also be opened from other devices on your Wi-Fi |
+| `pnpm website` | Publish / refresh the permanent public website (Netlify) |
+| `pnpm qr <link>` | Save a QR code image (`garuda-qr.png`) for a link |
+| `pnpm share` | While `pnpm start` runs: a public link that opens the dashboard from any network (needs `cloudflared`) |
 | `pnpm reseed` | Wipe and reseed the demo data, rebuild its index |
 | `pnpm scrape` | One live batch now (Akasa Air) → live database → rebuild live index |
 | `pnpm scrape --airline QP --route DEL-BOM` | Narrow live scrape, about 30 seconds |

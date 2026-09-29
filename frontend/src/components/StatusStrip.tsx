@@ -12,7 +12,7 @@ const STATE: Record<SourceStatus['status'], { icon: string; label: string; color
 }
 
 /** Data freshness + scraper health for the current dataset. Renders nothing until the API answers. */
-export function StatusStrip({ status }: { status: Status | undefined }) {
+export function StatusStrip({ status, publishedAt }: { status: Status | undefined; publishedAt?: string }) {
   if (!status) return null
   const counts = Object.entries(status.fares_by_source).sort(([, a], [, b]) => b - a)
   const run = status.last_run
@@ -20,6 +20,9 @@ export function StatusStrip({ status }: { status: Status | undefined }) {
   return (
     <div className="border-b border-line bg-wash text-sm text-ink-2">
       <div className="mx-auto flex max-w-[1400px] flex-wrap items-center gap-x-6 gap-y-1 px-6 py-2">
+        {publishedAt && (
+          <span className="rounded bg-navy-900 px-2 py-0.5 font-semibold text-white">Published copy · data as of {fmtTimeIST(publishedAt)}</span>
+        )}
         <span>
           <span className="font-semibold text-ink">Index through</span> {status.latest_period ? fmtDate(status.latest_period) : '—'}
         </span>
