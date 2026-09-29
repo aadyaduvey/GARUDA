@@ -1,38 +1,38 @@
 [
   {
-    "airline": "QP",
+    "airline": "SG",
     "origin": "DEL",
     "destination": "BOM",
-    "amount": 6880.0,
+    "amount": 6551.0,
     "advance_days": 1,
     "dep_dow": "TUE",
     "dep_date": "2026-10-06",
     "fare_class": "economy",
-    "scrape_ts": "2026-09-29T17:31:47.765543+00:00",
-    "source": "akasa_lowfare"
+    "scrape_ts": "2026-09-29T17:32:46.346867+00:00",
+    "source": "spicejet_lowfare"
   },
   {
-    "airline": "QP",
+    "airline": "SG",
     "origin": "DEL",
     "destination": "BOM",
-    "amount": 6880.0,
+    "amount": 6551.0,
     "advance_days": 1,
     "dep_dow": "SAT",
     "dep_date": "2026-10-03",
     "fare_class": "economy",
-    "scrape_ts": "2026-09-29T17:31:47.765543+00:00",
-    "source": "akasa_lowfare"
+    "scrape_ts": "2026-09-29T17:32:46.346867+00:00",
+    "source": "spicejet_lowfare"
   },
   {
-    "airline": "QP",
+    "airline": "SG",
     "origin": "DEL",
     "destination": "BOM",
-    "amount": 6880.0,
+    "amount": 6551.0,
     "advance_days": 7,
     "dep_dow": "TUE",
     "dep_date": "2026-10-06",
     "fare_class": "economy",
-    "scrape_ts": "2026-09-29T17:31:47.765543+00:00",
-    "source": "akasa_lowfare"
+    "scrape_ts": "2026-09-29T17:32:46.346867+00:00",
+    "source": "spicejet_lowfare"
   }
 ]

@@ -1,7 +1,11 @@
 import type { SourceStatus, Status } from '../api'
 import { fmtDate, fmtTimeIST } from '../format'
 
-const SOURCE_LABEL: Record<string, string> = { synthetic: 'synthetic seed', akasa_lowfare: 'live Akasa Air' }
+const SOURCE_LABEL: Record<string, string> = {
+  synthetic: 'synthetic seed',
+  akasa_lowfare: 'live Akasa Air',
+  spicejet_lowfare: 'live SpiceJet',
+}
 
 // Status colour never carries meaning alone: every state has its own icon and words.
 const STATE: Record<SourceStatus['status'], { icon: string; label: string; color: string }> = {

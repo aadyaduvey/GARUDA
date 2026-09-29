@@ -20,7 +20,8 @@ export function LiveBanner({ status }: { status: Status | undefined }) {
     <section className="mb-6 rounded-lg border border-accent/40 bg-accent/5 px-5 py-4">
       <p className="font-semibold text-navy-900">
         <span className="mr-2 rounded bg-accent px-2 py-0.5 text-sm font-bold tracking-wide text-white">LIVE</span>
-        Real Akasa Air fares only (about 5% of the domestic market), collected automatically every day at 06:00 IST.
+        Real fares from Akasa Air and SpiceJet (6.7% of domestic passengers, DGCA Aug 2026), collected every time GARUDA
+        starts and every 6 hours while it runs.
       </p>
       <p className="mt-1 text-ink-2">{progress}</p>
     </section>

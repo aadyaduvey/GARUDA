@@ -22,9 +22,10 @@ synthetic fares), builds the index, and starts three things:
 
 - Dashboard: **http://localhost:5174**
 - API: http://127.0.0.1:8010 (interactive docs at `/docs`)
-- The **live collector**: scrapes real Akasa Air fares every day at 06:00 IST (and right away if
-  today has not been collected yet), then rebuilds the live index. The dashboard picks up new
-  data by itself within 30 seconds.
+- The **live collector**: collects real Akasa Air and SpiceJet fares **as soon as it starts**
+  and again **every 6 hours** while it runs, refreshes the official MoSPI CPI airfare series,
+  and rebuilds the live index. The dashboard picks up new data by itself within 30 seconds.
+  (If you restart within 30 minutes of a collection, the start-up collection is skipped.)
 
 Stop with Ctrl+C. It is safe to re-run; existing databases are kept.
 
@@ -58,19 +59,24 @@ The switch at the top right of the dashboard chooses between:
 | Dataset | What it is | Use it for |
 |---|---|---|
 | **Demo data** | 14 days of synthetic fares for all 3 airlines, with one planted anomaly | The demo: stable numbers that show every feature |
-| **Live · Akasa** | Real Akasa Air fares only (~5% of the market), collected daily | Proof it works on real data. Its first 7 days form the base week; until then values are provisional |
+| **Live data** | Real Akasa Air and SpiceJet fares (6.7% of domestic passengers, DGCA Aug 2026), collected on every start and every 6 hours | Proof it works on real data. Its first 7 days form the base week; until then values are provisional |
 
 Live scrapes never touch the demo data.
+
+Both views also show the **official benchmark**: MoSPI's own CPI *Airfare* index (base
+2024 = 100, monthly), downloaded from MoSPI's open eSankhyiki API. Once GARUDA has 7+ days in a
+month MoSPI has published, GARUDA is chain-linked to it and shown on the same 2024 = 100 scale.
 
 | Command | What it does |
 |---|---|
 | `pnpm start` | Set up (first run) and run the API + dashboard |
 | `pnpm start:lan` | Same, but the dashboard can also be opened from other devices on your Wi-Fi |
 | `pnpm reseed` | Wipe and reseed the demo data, rebuild its index |
-| `pnpm scrape` | One live batch now (Akasa Air) → live database → rebuild live index |
-| `pnpm scrape --airline QP --route DEL-BOM` | Narrow live scrape, about 30 seconds |
-| `pnpm scrape:offline` | Replay 3 cached real fares into the live database, no network |
-| `pnpm verify` | Cross-check scraped prices against Akasa's own flight search (8 checks, ~1 minute) |
+| `pnpm scrape` | One live batch now (Akasa Air + SpiceJet, ~4 minutes) → live database → rebuild live index |
+| `pnpm scrape --airline QP --route DEL-BOM` | Narrow live scrape, about 30 seconds (`SG` = SpiceJet) |
+| `pnpm scrape:offline` | Replay cached real fares into the live database, no network |
+| `pnpm verify` | Cross-check scraped prices against each airline's own flight search (~2 minutes) |
+| `pnpm official` | Re-download the official MoSPI CPI airfare series now |
 | `pnpm test` | Backend tests + frontend type-check, build and lint |
 
 ## Demo click-path (3 minutes)
@@ -88,11 +94,15 @@ Start on **Demo data** (switch at the top right).
    same way." Click the route to jump back to its chart.
 5. **CPI Export** — "Route, period, index value, weight, base period: the shape MoSPI's CPI
    series consumes. Pick a date range and download."
-6. **Live** — flip the switch to **Live · Akasa**. "This is the same system on real fares,
-   collected automatically from Akasa Air every morning since *[first day]*." Optionally run
-   `pnpm scrape --airline QP --route DEL-BOM` in a terminal and watch the header update.
-7. **Data check** (if asked) — `pnpm verify`: "Every scraped price matches the cheapest flight
-   in Akasa's own search for the same airports."
+6. **Official benchmark** (bottom of National Index) — "This is MoSPI's own CPI airfare index,
+   base 2024 = 100, pulled live from eSankhyiki. It is monthly; GARUDA is daily, and links onto
+   this same scale as soon as the two overlap."
+7. **Live** — flip the switch to **Live data**. "This is the same system on real fares from
+   Akasa Air and SpiceJet, collected automatically since *[first day]*, every time it starts
+   and every 6 hours." Optionally run `pnpm scrape --airline SG --route DEL-BOM` in a terminal
+   and watch the header update.
+8. **Data check** (if asked) — `pnpm verify`: "Every scraped price matches the cheapest flight
+   in the airline's own search for the same airports."
 
 ## Methodology
 
@@ -101,6 +111,7 @@ Start on **Demo data** (switch at the top right).
 | Collection | 10 busiest routes × 3 airlines × advance windows 1/7/14/30 days × departures on Tuesday and Saturday; economy, lowest available fare, taxes included (mirrors the US BLS airfare spec) |
 | Cleaning | Fares below ₹500 or above ₹50,000 are dropped |
 | Missing fares | Carried forward from the last observation and flagged `imputed` |
+| Repeat prices | A quote priced several times in one day counts once, at the geometric mean of that day's prices |
 | Route index | **Jevons**: geometric mean of price relatives against each quote's base-week price. Never the arithmetic mean |
 | National index | DGCA-weighted arithmetic mean of route indices (Young / modified Laspeyres) |
 | Anomalies | Route index more than 2σ above its previous 7 days **and** at least 5% higher |
@@ -122,7 +133,8 @@ QA_REPORT.md  test results and known limitations
 
 ## Limitations
 
-See [QA_REPORT.md](QA_REPORT.md). In short: only Akasa Air is scraped live (IndiGo's
-robots.txt forbids it; Air India sits behind bot protection, and every other Indian travel
-site also forbids automated flight searches), the base period is the first week of data
-rather than 2024, and the live collector only runs while `pnpm start` is running.
+See [QA_REPORT.md](QA_REPORT.md). In short: only Akasa Air and SpiceJet are scraped live
+(IndiGo's and Air India Express's robots.txt forbid it; Air India sits behind bot protection,
+and every Indian travel site checked also forbids automated flight searches), GARUDA's own base
+is its first week of data until it overlaps a published MoSPI month, and the live collector
+only runs while `pnpm start` is running.

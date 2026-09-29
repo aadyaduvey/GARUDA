@@ -108,3 +108,31 @@ class StatusOut(BaseModel):
     fares_by_source: dict[str, int]
     last_live_fare_at: datetime | None  # newest non-synthetic fare
     last_run: ScraperRunOut | None
+
+
+class OfficialPoint(BaseModel):
+    month: str  # "YYYY-MM"
+    index: float  # base 2024 = 100
+    inflation: float | None  # % vs the same month a year earlier, as published
+
+
+class OfficialLink(BaseModel):
+    month: str  # the overlapping month used to chain-link GARUDA to the official series
+    garuda_days: int
+    factor: float
+    latest_period: date
+    latest_value: float  # GARUDA's latest national index on the official 2024 = 100 scale
+
+
+class OfficialOut(BaseModel):
+    available: bool  # False until the series has been downloaded once
+    item: str  # "Airfare"
+    code: str  # CPI item code, e.g. "07.3.3.1.2.01"
+    base_year: str
+    area: str
+    source_name: str
+    source_url: str
+    fetched_at: datetime | None
+    series: list[OfficialPoint]
+    link: OfficialLink | None  # None until GARUDA has LINK_MIN_DAYS days in a published month
+    link_min_days: int

@@ -6,13 +6,14 @@
     "start": "pnpm install && pnpm run setup && pnpm run dev",
     "start:lan": "pnpm install && pnpm run setup && pnpm run dev:lan",
     "setup": "uv sync --directory backend && uv run --directory backend python -m app.bootstrap && pnpm --dir frontend install",
-    "dev": "node scripts/check-ports.mjs && concurrently --kill-others --names api,web,collect --prefix-colors blue,magenta,green \"uv run --directory backend uvicorn app.main:app --host 127.0.0.1 --port 8010\" \"pnpm --dir frontend dev --port 5174 --strictPort\" \"uv run --directory backend python -m app.scraper.scheduler --daily\"",
-    "dev:lan": "node scripts/check-ports.mjs && concurrently --kill-others --names api,web,collect --prefix-colors blue,magenta,green \"uv run --directory backend uvicorn app.main:app --host 127.0.0.1 --port 8010\" \"pnpm --dir frontend dev --port 5174 --strictPort --host\" \"uv run --directory backend python -m app.scraper.scheduler --daily\"",
+    "dev": "node scripts/check-ports.mjs && concurrently --kill-others --names api,web,collect --prefix-colors blue,magenta,green \"uv run --directory backend uvicorn app.main:app --host 127.0.0.1 --port 8010\" \"pnpm --dir frontend dev --port 5174 --strictPort\" \"uv run --directory backend python -m app.scraper.scheduler --watch\"",
+    "dev:lan": "node scripts/check-ports.mjs && concurrently --kill-others --names api,web,collect --prefix-colors blue,magenta,green \"uv run --directory backend uvicorn app.main:app --host 127.0.0.1 --port 8010\" \"pnpm --dir frontend dev --port 5174 --strictPort --host\" \"uv run --directory backend python -m app.scraper.scheduler --watch\"",
     "test": "uv run --directory backend python -m pytest && pnpm --dir frontend build && pnpm --dir frontend lint",
     "reseed": "uv run --directory backend python -m app.seed",
     "scrape": "uv run --directory backend python -m app.scraper.scheduler",
     "scrape:offline": "uv run --directory backend python -m app.scraper.scheduler --dry-run",
-    "verify": "uv run --directory backend python -m app.scraper.verify"
+    "verify": "uv run --directory backend python -m app.scraper.verify",
+    "official": "uv run --directory backend python -m app.official"
   },
   "devDependencies": {
     "concurrently": "^9.2.1"

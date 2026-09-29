@@ -60,7 +60,7 @@ export function RouteExplorer({ routes, routeId, onRouteChange }: { routes: Rout
                   <LineChart data={series} margin={{ top: 32, right: 72, bottom: 4, left: 0 }}>
                     <CartesianGrid {...gridProps} />
                     <XAxis dataKey="period" tickFormatter={fmtDay} {...axisProps} minTickGap={24} />
-                    <YAxis {...axisProps} width={56} {...niceScale(series.map((p) => p.jevons_index), 100)} />
+                    <YAxis {...axisProps} width={68} {...niceScale(series.map((p) => p.jevons_index), 100)} />
                     <ReferenceLine y={100} stroke={C.axis} label={{ value: 'Base = 100', position: 'insideBottomLeft', fill: C.ink2, fontSize: 14 }} />
                     <Tooltip
                       cursor={{ stroke: C.axis }}

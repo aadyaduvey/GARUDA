@@ -14,7 +14,7 @@ export const setDataset = (d: Dataset) => {
 /** What to tell the viewer when the current dataset has nothing to show yet. */
 export const noDataHint = () =>
   dataset === 'live'
-    ? 'No live fares yet. Run `pnpm scrape`, or keep `pnpm start` running: it collects every day at 06:00 IST.'
+    ? 'No live fares yet. Run `pnpm scrape`, or `pnpm start`: it collects as soon as it starts and every 6 hours while it runs.'
     : 'No index values yet. Seed the demo data with `pnpm reseed`.'
 
 export type Route = { id: number; origin: string; destination: string; label: string; dgca_weight: number }
@@ -61,6 +61,22 @@ export type Status = {
   last_run: ScraperRun | null
 }
 
+export type OfficialPoint = { month: string; index: number; inflation: number | null }
+export type OfficialLink = { month: string; garuda_days: number; factor: number; latest_period: string; latest_value: number }
+export type Official = {
+  available: boolean
+  item: string
+  code: string
+  base_year: string
+  area: string
+  source_name: string
+  source_url: string
+  fetched_at: string | null
+  series: OfficialPoint[]
+  link: OfficialLink | null
+  link_min_days: number
+}
+
 async function get(path: string): Promise<Response> {
   const url = new URL(`${API_URL}${path}`, window.location.origin)
   url.searchParams.set('dataset', dataset)
@@ -86,6 +102,7 @@ export const api = {
   anomalies: () => json<Anomaly[]>('/api/anomalies'),
   yieldCurve: (id: number) => json<YieldCurve>(`/api/yield-curve/${id}`),
   status: () => json<Status>('/api/status'),
+  official: () => json<Official>('/api/official/cpi-airfare'),
   cpiCsv: async (start: string, end: string) =>
     (await get(`/api/export/cpi?${new URLSearchParams({ start, end })}`)).text(),
 }

@@ -3,18 +3,22 @@ One failing airline never stops the batch.
 
   uv run python -m app.scraper.scheduler              # one live batch now
   uv run python -m app.scraper.scheduler --dry-run    # offline: cached sample rows, no network
-  uv run python -m app.scraper.scheduler --daily      # keep running: catch up now if today is missing,
-                                                      # then one batch every day at 06:00 IST
+  uv run python -m app.scraper.scheduler --watch      # keep running (what `pnpm start` uses): a batch
+                                                      # now, then one every REFRESH_HOURS hours
+
+Several batches on one day are fine: the index combines a quote's same-day prices by geometric
+mean (pipeline/impute.py). Each batch also refreshes the official MoSPI CPI airfare series.
 """
 import argparse
 import json
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from sqlalchemy import Engine
 from sqlmodel import Session, func, select
 
+from app import official
 from app.bootstrap import bootstrap_live
 from app.build_index import build
 from app.db import DATA_DIR, SCRAPER_STATUS_FILE, live_engine
@@ -24,13 +28,16 @@ from app.scraper.airindia import AirIndiaScraper
 from app.scraper.akasa import AkasaScraper
 from app.scraper.base import FareRow, Scraper, ScraperError, today_ist
 from app.scraper.indigo import IndigoScraper
+from app.scraper.spicejet import SpiceJetScraper
 
 log = logging.getLogger("garuda.scheduler")
 
-SCRAPERS: dict[str, Scraper] = {s.airline: s for s in (AkasaScraper(), IndigoScraper(), AirIndiaScraper())}
+SCRAPERS: dict[str, Scraper] = {s.airline: s for s in (AkasaScraper(), SpiceJetScraper(), IndigoScraper(), AirIndiaScraper())}
 CACHE_DIR = DATA_DIR / "pre_collected"
 STATUS_FILE = SCRAPER_STATUS_FILE
 DRY_RUN_ROWS = 3
+REFRESH_HOURS = 6  # --watch: collect again this often while running
+MIN_GAP = timedelta(minutes=30)  # --watch: skip the start-up batch if fares arrived this recently (quick restarts)
 
 
 def cache_path(scraper: Scraper, cache_dir: Path) -> Path:
@@ -119,14 +126,24 @@ def run_batch(
     return report
 
 
-def collected_today(eng: Engine = live_engine) -> bool:
-    """True if the database already holds a scraped (non-synthetic) fare from today, IST."""
+def last_collected_at(eng: Engine = live_engine) -> datetime | None:
+    """When the newest scraped (non-synthetic) fare was captured, or None."""
     with Session(eng) as session:
         last = session.exec(select(func.max(Fare.scrape_ts)).where(Fare.source != "synthetic")).one()
     if last is None:
-        return False
-    last = last if last.tzinfo else last.replace(tzinfo=timezone.utc)  # SQLite returns UTC without tzinfo
-    return last.astimezone(IST).date() == today_ist()
+        return None
+    return last if last.tzinfo else last.replace(tzinfo=timezone.utc)  # SQLite returns UTC without tzinfo
+
+
+def collected_today(eng: Engine = live_engine) -> bool:
+    """True if the database already holds a scraped (non-synthetic) fare from today, IST."""
+    last = last_collected_at(eng)
+    return last is not None and last.astimezone(IST).date() == today_ist()
+
+
+def start_up_batch_due(last: datetime | None, now: datetime, min_gap: timedelta = MIN_GAP) -> bool:
+    """--watch collects on every start, unless the last capture is only minutes old."""
+    return last is None or now - last >= min_gap
 
 
 def print_report(report: dict) -> None:
@@ -143,29 +160,33 @@ def main() -> None:
     parser.add_argument("--dry-run", action="store_true", help="offline: ingest cached sample rows, no network")
     parser.add_argument("--airline", action="append", choices=sorted(SCRAPERS), help="limit to these IATA codes")
     parser.add_argument("--route", action="append", help="limit to these routes, e.g. DEL-BOM")
-    parser.add_argument("--daily", action="store_true", help="stay running and batch every day at 06:00 IST")
+    parser.add_argument("--watch", "--daily", dest="watch", action="store_true", help=f"stay running: a batch now, then every {REFRESH_HOURS} hours")
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+    logging.getLogger("httpx").setLevel(logging.WARNING)
     log.info("live database: %s", bootstrap_live())
 
     def job() -> None:
+        if not args.dry_run:
+            log.info(official.refresh())
         print_report(run_batch(airlines=args.airline, routes=args.route, dry_run=args.dry_run))
 
-    if not args.daily:
+    if not args.watch:
         job()
         return
 
     from apscheduler.schedulers.blocking import BlockingScheduler
-    from apscheduler.triggers.cron import CronTrigger
+    from apscheduler.triggers.interval import IntervalTrigger
 
-    if collected_today():
-        log.info("today's fares already collected")
-    else:
-        log.info("no fares collected today yet: running a catch-up batch now")
+    last = last_collected_at()
+    if start_up_batch_due(last, datetime.now(timezone.utc)):
+        log.info("collecting fresh fares now")
         job()
+    else:
+        log.info("fares were collected at %s (under %d min ago): skipping the start-up batch", last.astimezone(IST).strftime("%H:%M IST"), MIN_GAP.seconds // 60)
     scheduler = BlockingScheduler(timezone="Asia/Kolkata")
-    scheduler.add_job(job, CronTrigger(hour=6, minute=0, timezone="Asia/Kolkata"), misfire_grace_time=3600)
-    log.info("scheduled daily batch at 06:00 IST; Ctrl+C to stop")
+    scheduler.add_job(job, IntervalTrigger(hours=REFRESH_HOURS), misfire_grace_time=3600, coalesce=True)
+    log.info("next batch in %d hours, then every %d hours; Ctrl+C to stop", REFRESH_HOURS, REFRESH_HOURS)
     scheduler.start()
 
 

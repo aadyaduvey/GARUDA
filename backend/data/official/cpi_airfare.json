@@ -1,0 +1,116 @@
+{
+ "item": {
+  "name": "Airfare",
+  "code": "07.3.3.1.2.01",
+  "base_year": "2024",
+  "area": "All India, rural + urban"
+ },
+ "source": {
+  "name": "MoSPI eSankhyiki, CPI (base 2024)",
+  "url": "https://esankhyiki.mospi.gov.in/macroindicators?product=cpi",
+  "api": "https://api.mospi.gov.in/api/cpi/getCPIData"
+ },
+ "fetched_at": "2026-09-29T15:35:11+00:00",
+ "series": [
+  {
+   "month": "2025-01",
+   "index": 115.05,
+   "inflation": null
+  },
+  {
+   "month": "2025-02",
+   "index": 131.66,
+   "inflation": null
+  },
+  {
+   "month": "2025-03",
+   "index": 108.19,
+   "inflation": null
+  },
+  {
+   "month": "2025-04",
+   "index": 110.94,
+   "inflation": null
+  },
+  {
+   "month": "2025-05",
+   "index": 110.92,
+   "inflation": null
+  },
+  {
+   "month": "2025-06",
+   "index": 114.48,
+   "inflation": null
+  },
+  {
+   "month": "2025-07",
+   "index": 102.05,
+   "inflation": null
+  },
+  {
+   "month": "2025-08",
+   "index": 112.11,
+   "inflation": null
+  },
+  {
+   "month": "2025-09",
+   "index": 105.22,
+   "inflation": null
+  },
+  {
+   "month": "2025-10",
+   "index": 108.19,
+   "inflation": null
+  },
+  {
+   "month": "2025-11",
+   "index": 121.45,
+   "inflation": null
+  },
+  {
+   "month": "2025-12",
+   "index": 124.23,
+   "inflation": null
+  },
+  {
+   "month": "2026-01",
+   "index": 122.71,
+   "inflation": 6.65
+  },
+  {
+   "month": "2026-02",
+   "index": 122.43,
+   "inflation": -7.01
+  },
+  {
+   "month": "2026-03",
+   "index": 123.55,
+   "inflation": 14.2
+  },
+  {
+   "month": "2026-04",
+   "index": 123.27,
+   "inflation": 11.11
+  },
+  {
+   "month": "2026-05",
+   "index": 127.62,
+   "inflation": 15.06
+  },
+  {
+   "month": "2026-06",
+   "index": 126.09,
+   "inflation": 10.14
+  },
+  {
+   "month": "2026-07",
+   "index": 125.46,
+   "inflation": 22.94
+  },
+  {
+   "month": "2026-08",
+   "index": 135.49,
+   "inflation": 20.85
+  }
+ ]
+}

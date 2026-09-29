@@ -12,6 +12,6 @@ export default defineConfig({
     strictPort: true,
     // The dashboard calls the API through this dev server (same origin), so it also works when
     // opened from another device (`pnpm start:lan`), where 127.0.0.1 would mean that device.
-    proxy: { '/api': API, '/health': API },
+    proxy: { '/api': API, '/health': API, '/docs': API, '/openapi.json': API },
   },
 })

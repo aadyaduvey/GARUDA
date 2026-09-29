@@ -12,7 +12,12 @@
   --color-critical: #d03b3b;
   --color-serious: #ec835a;
   --color-warning: #fab219;
-  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  /* Tricolour, for stripes and accents only (saffron and green are below 4.5:1 as text on white). */
+  --color-saffron: #ff9933;
+  --color-india-green: #138808;
+  --color-ticker: #dcebfb;
+  --color-footer: #272727;
+  --font-sans: "Noto Sans", "Noto Sans Devanagari", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
 /* Projector-friendly: large base size, scaled down a step on small screens. */
@@ -24,6 +29,13 @@ html {
     font-size: 16px;
   }
 }
+/* Text-size buttons in the top strip (A- / A / A+), as on Indian government portals (GIGW). */
+html[data-text-size="small"] {
+  font-size: 15px;
+}
+html[data-text-size="large"] {
+  font-size: 21px;
+}
 
 body {
   @apply bg-white font-sans text-ink antialiased;
@@ -31,4 +43,31 @@ body {
 
 .tnum {
   font-variant-numeric: tabular-nums;
+}
+
+.tricolour {
+  background: linear-gradient(90deg, var(--color-saffron) 0 33.33%, #ffffff 33.33% 66.66%, var(--color-india-green) 66.66% 100%);
+}
+
+/* News ticker: two copies of the items scroll by one copy's width, so the loop is seamless. */
+@keyframes ticker {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+.ticker-track {
+  animation: ticker var(--ticker-duration, 60s) linear infinite;
+}
+.ticker-track[data-paused="true"],
+.ticker-viewport:hover .ticker-track,
+.ticker-viewport:focus-within .ticker-track {
+  animation-play-state: paused;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ticker-track {
+    animation: none;
+  }
 }

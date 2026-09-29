@@ -13,6 +13,9 @@ export const fmtDay = (iso: string) => parseDate(iso).toLocaleDateString('en-IN'
 export const fmtTimeIST = (iso: string) =>
   `${new Date(iso).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false })} IST`
 
+/** 'YYYY-MM' -> 'Aug 2026'. */
+export const fmtMonth = (ym: string) => parseDate(`${ym}-01`).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })
+
 export const fmtIndex = (n: number) => n.toFixed(2)
 
 const inr = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 })

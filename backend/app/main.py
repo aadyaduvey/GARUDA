@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import routes_export, routes_fares, routes_index, routes_status
+from app.api import routes_export, routes_fares, routes_index, routes_official, routes_status
 from app.db import ENGINES, init_db
 
 
@@ -32,6 +32,7 @@ app.include_router(routes_index.router)
 app.include_router(routes_fares.router)
 app.include_router(routes_export.router)
 app.include_router(routes_status.router)
+app.include_router(routes_official.router)
 
 
 @app.get("/health")

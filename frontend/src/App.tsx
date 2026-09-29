@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { type Dataset, type Status, api, noDataHint, setDataset } from './api'
 import { LiveBanner } from './components/LiveBanner'
+import { Counters, MainNav, NewsTicker, PageTitle, SiteFooter, SiteHeader, TopStrip } from './components/portal'
 import { StatusStrip } from './components/StatusStrip'
 import { Async } from './components/ui'
+import { fmtIndex, fmtMonth } from './format'
 import { useApi } from './useApi'
 import { AnomaliesView } from './views/AnomaliesView'
 import { ExportView } from './views/ExportView'
@@ -11,11 +13,11 @@ import { RouteExplorer } from './views/RouteExplorer'
 import { YieldCurveView } from './views/YieldCurveView'
 
 const VIEWS = [
-  { id: 'national', label: 'National Index' },
-  { id: 'routes', label: 'Route Explorer' },
-  { id: 'yield', label: 'Yield Curve' },
-  { id: 'anomalies', label: 'Anomaly Alerts' },
-  { id: 'export', label: 'CPI Export' },
+  { id: 'national', label: 'National Index', description: 'The national domestic airfare sub-index, ready for CPI Division 07 (Transport).' },
+  { id: 'routes', label: 'Route Explorer', description: 'The Jevons index and average fare by carrier for each of the 10 basket routes.' },
+  { id: 'yield', label: 'Yield Curve', description: 'How fares rise as departure approaches: booking 30, 14, 7 and 1 days ahead.' },
+  { id: 'anomalies', label: 'Anomaly Alerts', description: 'Routes whose index rose more than 2σ and 5% above their previous week.' },
+  { id: 'export', label: 'CPI Export', description: 'Download the index in the shape MoSPI’s CPI series consumes.' },
 ] as const
 type ViewId = (typeof VIEWS)[number]['id']
 
@@ -56,9 +58,11 @@ export default function App() {
   const [refresh, setRefresh] = useState(0)
   const routes = useApi(api.routes, [dataset, refresh])
   const anomalies = useApi(api.anomalies, [dataset, refresh])
+  const official = useApi(api.official, [dataset, refresh])
   const status = useApi(api.status, [dataset])
   const [routeId, setRouteId] = useState<number>()
   const selectedRoute = routeId ?? routes.data?.[0]?.id
+  const current = VIEWS.find((v) => v.id === view)!
 
   // Poll the status; when the data underneath changes, remount the views so every chart refetches.
   const { reload: reloadStatus } = status
@@ -85,55 +89,52 @@ export default function App() {
     setDatasetState(d)
   }
 
+  const fares = status.data ? Object.values(status.data.fares_by_source).reduce((a, b) => a + b, 0) : undefined
+  const latestOfficial = official.data?.available ? official.data.series.at(-1) : undefined
+
   return (
-    <div className="min-h-screen">
-      <header className="bg-navy-900 text-white">
-        <div className="mx-auto flex max-w-[1400px] flex-wrap items-baseline justify-between gap-x-8 gap-y-1 px-6 py-5">
-          <div>
-            <h1 className="text-3xl font-bold tracking-wide">GARUDA</h1>
-            <p className="text-lg text-white/85">Real-time Airfare Price Index · domestic sub-index for CPI Division 07</p>
-          </div>
-          <p className="text-white/75">Prototype for MoSPI · Smart India Hackathon SIH26056</p>
+    <div className="flex min-h-screen flex-col">
+      <TopStrip />
+      <SiteHeader>
+        <div role="group" aria-label="Dataset" className="flex rounded-md border border-navy-800/40 p-0.5">
+          {(['demo', 'live'] as const).map((d) => (
+            <button
+              key={d}
+              onClick={() => switchDataset(d)}
+              aria-pressed={dataset === d}
+              className={`rounded px-3 py-1.5 font-medium ${dataset === d ? 'bg-navy-900 text-white' : 'text-ink-2 hover:text-navy-900'}`}
+            >
+              {d === 'demo' ? 'Demo data' : 'Live data'}
+            </button>
+          ))}
         </div>
-      </header>
+      </SiteHeader>
+      <MainNav
+        items={VIEWS.map((v) => ({ id: v.id, label: v.label, badge: v.id === 'anomalies' ? anomalies.data?.length : undefined }))}
+        current={view}
+        onSelect={go}
+      />
+      <NewsTicker status={status.data} official={official.data} dataset={dataset} />
       <StatusStrip status={status.data} />
+      <PageTitle title={current.label} description={current.description} onHome={view === 'national' ? undefined : () => go('national')} />
 
-      <nav className="border-b border-line bg-white">
-        <div className="mx-auto flex max-w-[1400px] flex-wrap items-center justify-between gap-x-6 px-6">
-          <ul className="flex flex-wrap">
-            {VIEWS.map((v) => (
-              <li key={v.id}>
-                <button
-                  onClick={() => go(v.id)}
-                  aria-current={view === v.id ? 'page' : undefined}
-                  className={`border-b-4 px-4 py-3 text-lg font-medium transition-colors ${
-                    view === v.id ? 'border-accent text-navy-900' : 'border-transparent text-ink-2 hover:text-navy-900'
-                  }`}
-                >
-                  {v.label}
-                  {v.id === 'anomalies' && anomalies.data && anomalies.data.length > 0 && (
-                    <span className="ml-2 rounded-full bg-critical px-2 py-0.5 text-sm font-semibold text-white">{anomalies.data.length}</span>
-                  )}
-                </button>
-              </li>
-            ))}
-          </ul>
-          <div role="group" aria-label="Dataset" className="my-2 flex rounded-md border border-navy-800/40 p-0.5">
-            {(['demo', 'live'] as const).map((d) => (
-              <button
-                key={d}
-                onClick={() => switchDataset(d)}
-                aria-pressed={dataset === d}
-                className={`rounded px-3 py-1.5 font-medium ${dataset === d ? 'bg-navy-900 text-white' : 'text-ink-2 hover:text-navy-900'}`}
-              >
-                {d === 'demo' ? 'Demo data' : 'Live · Akasa'}
-              </button>
-            ))}
+      <main id="main" tabIndex={-1} key={`${dataset}-${refresh}`} className="mx-auto w-full max-w-[1400px] flex-1 px-6 py-8 outline-none">
+        {view === 'national' && (
+          <div className="mb-6">
+            <Counters
+              items={[
+                { value: fares?.toLocaleString('en-IN') ?? '—', label: 'Fares collected', sub: dataset === 'live' ? 'real, Akasa Air + SpiceJet' : 'synthetic demo' },
+                { value: status.data?.days_collected ?? '—', label: 'Days of index', sub: `first ${status.data?.base_days ?? 7} form the base` },
+                { value: routes.data?.length ?? '—', label: 'Routes in basket', sub: 'busiest domestic routes' },
+                {
+                  value: latestOfficial ? fmtIndex(latestOfficial.index) : '—',
+                  label: 'Official CPI airfare',
+                  sub: latestOfficial ? `MoSPI, ${fmtMonth(latestOfficial.month)} (2024 = 100)` : 'MoSPI, not loaded',
+                },
+              ]}
+            />
           </div>
-        </div>
-      </nav>
-
-      <main key={`${dataset}-${refresh}`} className="mx-auto max-w-[1400px] px-6 py-8">
+        )}
         {dataset === 'live' && <LiveBanner status={status.data} />}
         {view === 'national' && <NationalView anomalies={anomalies.data} />}
         {(view === 'routes' || view === 'yield') && (
@@ -155,6 +156,7 @@ export default function App() {
         )}
         {view === 'export' && <ExportView />}
       </main>
+      <SiteFooter lastUpdated={status.data?.latest_period ?? null} />
     </div>
   )
 }

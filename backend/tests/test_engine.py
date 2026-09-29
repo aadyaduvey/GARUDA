@@ -104,6 +104,13 @@ def test_carry_forward_fills_gap_and_flags_it() -> None:
     assert out["imputed"].tolist() == [False, True, False]
 
 
+def test_same_day_observations_combine_by_geometric_mean() -> None:
+    fares = pd.DataFrame([quote(1, 1, D0, 100), quote(1, 1, D0, 121)])
+    out = carry_forward(fares, [D0])
+    assert out["amount"].iloc[0] == pytest.approx(110.0)  # sqrt(100 x 121), not 110.5 or 100
+    assert not out["imputed"].iloc[0]
+
+
 # --- Yield curve ------------------------------------------------------------
 
 

@@ -21,11 +21,14 @@ N_DAYS = 14
 ADVANCE_DAYS = (1, 7, 14, 30)
 DEP_DOWS = ("TUE", "SAT")
 
-# (name, IATA code, domestic market-share proxy, price level relative to IndiGo)
+# (name, IATA code, domestic market share, price level relative to IndiGo for the synthetic demo).
+# Shares: DGCA domestic traffic, August 2026 (published 23 Sep 2026); Air India = Air India Group.
+# Airlines with price level None get no synthetic fares: they appear in the live data only.
 AIRLINES = [
-    ("IndiGo", "6E", 0.64, 1.00),
-    ("Air India", "AI", 0.27, 1.08),
-    ("Akasa Air", "QP", 0.05, 0.96),
+    ("IndiGo", "6E", 0.650, 1.00),
+    ("Air India", "AI", 0.267, 1.08),
+    ("Akasa Air", "QP", 0.055, 0.96),
+    ("SpiceJet", "SG", 0.012, None),
 ]
 
 # Typical 30-day-advance economy fare (INR) for IndiGo on a Tuesday.
@@ -61,7 +64,8 @@ def load_routes(path: Path = ROUTE_BASKET_CSV) -> list[Route]:
 
 
 def generate_fares(routes: list[Route], airlines: list[Airline], start: date, rng: np.random.Generator) -> list[Fare]:
-    price_level = {code: level for _, code, _, level in AIRLINES}
+    price_level = {code: level for _, code, _, level in AIRLINES if level is not None}
+    airlines = [a for a in airlines if a.code in price_level]
     fares = []
     for day in range(N_DAYS):
         scrape_ts = datetime.combine(start + timedelta(days=day), time(6, 0), tzinfo=IST)
@@ -94,9 +98,25 @@ def generate_fares(routes: list[Route], airlines: list[Airline], start: date, rn
 
 
 def add_reference_data(session: Session) -> tuple[list[Route], list[Airline]]:
-    """Insert the route basket and the airlines (shared by the demo and live databases). Flushed, not committed."""
-    routes = load_routes()
-    airlines = [Airline(name=name, code=code, market_share=share) for name, code, share, _ in AIRLINES]
+    """Make the route basket and the airlines current (shared by the demo and live databases).
+
+    Idempotent: adds what is missing and refreshes weights and market shares, never duplicates.
+    Flushed, not committed. Returns every basket route and airline.
+    """
+    existing_routes = {(r.origin, r.destination): r for r in session.exec(select(Route))}
+    routes = []
+    for route in load_routes():
+        current = existing_routes.get((route.origin, route.destination))
+        if current:
+            current.dgca_weight = route.dgca_weight
+        routes.append(current or route)
+    existing_airlines = {a.code: a for a in session.exec(select(Airline))}
+    airlines = []
+    for name, code, share, _ in AIRLINES:
+        current = existing_airlines.get(code)
+        if current:
+            current.name, current.market_share = name, share
+        airlines.append(current or Airline(name=name, code=code, market_share=share))
     session.add_all(routes + airlines)
     session.flush()
     return routes, airlines
